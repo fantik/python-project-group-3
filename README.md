@@ -108,11 +108,12 @@ The project can be extended with additional functionality:
 
 ## 📁 Project Structure
 
-> Layout will change after splitting into modules.
-
 ```
 python-project-group-3/
-├── main.py              # Core application logic
+├── main.py              # CLI entry point
+├── models.py            # Field, Record, AddressBook
+├── storage.py           # save/load persistence
+├── handlers.py          # Command handlers and input parsing
 ├── requirements.txt     # Dependencies
 ├── addressbook.pkl      # Local storage (auto-generated)
 ├── .gitignore

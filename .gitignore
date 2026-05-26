@@ -1,3 +1,41 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
-.venv
-venv
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test / lint / type check caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local application data
+addressbook.pkl
+
+# Environment variables
+.env
+.env.*
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
