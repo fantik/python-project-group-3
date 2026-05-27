@@ -40,7 +40,7 @@ The personal assistant must be able to:
    - Phone numbers
    - Email
    - Birthday
-   in a contact book
+     in a contact book
 2. Display a list of contacts whose birthdays occur within a specified number of days from the current date
 3. Validate phone numbers and email addresses during creation or editing and notify the user in case of invalid input
 4. Search contacts within the address book
@@ -138,25 +138,57 @@ git clone git@github.com:fantik/python-project-group-3.git
 cd python-project-group-3
 ```
 
-### 2. Sync dependencies with uv
+### 2. Install uv
+
+[uv](https://docs.astral.sh/uv/) is a fast Python package and project manager. It supports **macOS**, **Linux**, and **Windows**.
+
+**macOS and Linux** (recommended — standalone installer):
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Restart your terminal, then verify:
+
+```bash
+uv --version
+```
+
+**Windows** (PowerShell):
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+**Alternative** (any OS with Python/pip already installed):
+
+```bash
+pip install uv
+# or
+pipx install uv
+```
+
+For Homebrew, WinGet, Scoop, and other methods, see the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+
+### 3. Sync dependencies with uv
 
 ```bash
 uv sync
 ```
 
-### 3. Run application
+### 4. Run application
 
 ```bash
 uv run python main.py
 ```
 
-### 4. Run tests
+### 5. Run tests
 
 ```bash
 uv run python -m unittest discover -s tests
 ```
 
-### 5. Build Sphinx documentation
+### 6. Build Sphinx documentation
 
 ```bash
 uv sync --group docs
@@ -207,16 +239,14 @@ Then create a Pull Request into `main`.
 
 ### Contacts
 
-| Command  | Example                             |
-| -------- | ----------------------------------- |
-| `add`    | `add John 1234567890`               |
-| `change` | `change John 1234567890 0987654321` |
-| `add-address` | `add-address John 221B Baker Street` |
-| `edit-address` | `edit-address John 10 Downing Street` |
-| `add-email` | `add-email John john@example.com` |
-| `edit-email` | `edit-email John john.work@example.com` |
-| `phone`  | `phone John`                        |
-| `all`    | Show all contacts                   |
+| Command        | Example                                 |
+| -------------- | --------------------------------------- |
+| `add`          | `add John 1234567890`                   |
+| `add-address`  | `add-address John 221B Baker Street`    |
+| `add-email`    | `add-email John john@example.com`       |
+| `edit-contact` | `edit-contact John email john@work.com` |
+| `phone`        | `phone John`                            |
+| `all`          | Show all contacts                       |
 
 ### Birthdays
 
@@ -225,6 +255,22 @@ Then create a Pull Request into `main`.
 | `add-birthday`  | `add-birthday John 01.01.2000` |
 | `show-birthday` | `show-birthday John`           |
 | `birthdays`     | Show upcoming birthdays        |
+
+### Edit contact (`edit-contact`)
+
+Update any contact field in one command. All values are validated through `validators.py`.
+
+| Field      | Example                                              |
+| ---------- | ---------------------------------------------------- |
+| `name`     | `edit-contact John name Jonathan`                    |
+| `email`    | `edit-contact John email john.work@example.com`      |
+| `address`  | `edit-contact John address 10 Downing Street London` |
+| `phone`    | `edit-contact John phone 0671234567 0501234567`      |
+| `birthday` | `edit-contact John birthday 15.06.1990`              |
+
+- **Name** must contain at least 2 letters.
+- **Phone** requires the old and new numbers (same rules as `change`).
+- If the contact does not exist, the bot shows `[red]Contact not found[/red]`.
 
 ---
 
@@ -261,4 +307,7 @@ Enter a command: add-birthday John 01.01.2000
 Birthday added.
 
 Enter a command: birthdays
+
+Enter a command: edit-contact John email john.work@example.com
+Email updated.
 ```

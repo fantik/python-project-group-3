@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.table import Table
 
 from models import Record
+from validators import ContactNotFoundError, validate_name
 
 console = Console()
 
@@ -51,19 +52,6 @@ def add_contact(args, book):
 
     record.add_phone(phone)
     return message
-
-
-@input_error
-def change_contact(args, book):
-    """Change one phone number for an existing contact."""
-    name, old_phone, new_phone = args
-    record = book.find(name)
-
-    if record is None:
-        return "[red]Contact not found[/red]"
-
-    record.edit_phone(old_phone, new_phone)
-    return "[green]Contact changed.[/green]"
 
 
 @input_error
@@ -147,21 +135,6 @@ def add_address(args, book):
 
 
 @input_error
-def edit_address(args, book):
-    """Replace a contact's address."""
-    require_min_args(args, 2, "edit-address [name] [new_address]")
-    name = args[0]
-    new_address = " ".join(args[1:])
-    record = book.find(name)
-
-    if record is None:
-        return "[red]Contact not found[/red]"
-
-    record.edit_address(new_address)
-    return "[green]Address updated.[/green]"
-
-
-@input_error
 def add_email(args, book):
     """Set a contact's email."""
     require_min_args(args, 2, "add-email [name] [email]")
@@ -174,21 +147,6 @@ def add_email(args, book):
 
     record.add_email(email)
     return "[green]Email added.[/green]"
-
-
-@input_error
-def edit_email(args, book):
-    """Replace a contact's email."""
-    require_min_args(args, 2, "edit-email [name] [new_email]")
-    name = args[0]
-    new_email = " ".join(args[1:])
-    record = book.find(name)
-
-    if record is None:
-        return "[red]Contact not found[/red]"
-
-    record.edit_email(new_email)
-    return "[green]Email updated.[/green]"
 
 
 @input_error
@@ -207,6 +165,77 @@ def show_birthday(args, book):
         f"[green]{name}'s birthday: [/green]"
         f"[green]{record.birthday.value.strftime('%d.%m.%Y')}[/green]"
     )
+
+
+_EDIT_CONTACT_FIELDS = frozenset(
+    {"name", "email", "address", "phone", "birthday"}
+)
+
+
+@input_error
+def edit_contact(args, book):
+    """Update a contact field (name, email, address, phone, or birthday)."""
+    require_min_args(
+        args,
+        3,
+        "edit-contact [name] [field] [value...]",
+    )
+    name = args[0]
+    field = args[1].lower()
+    record = book.find(name)
+
+    if record is None:
+        raise ContactNotFoundError()
+
+    if field not in _EDIT_CONTACT_FIELDS:
+        fields = ", ".join(sorted(_EDIT_CONTACT_FIELDS))
+        raise ValueError(
+            f"[red]Unknown field '{field}'. "
+            f"Use one of: {fields}[/red]"
+        )
+
+    if field == "name":
+        new_name = validate_name(" ".join(args[2:]))
+        if book.find(new_name) and new_name != record.name.value:
+            raise ValueError(
+                "[red]Contact with this name already exists[/red]"
+            )
+        record.edit_name(new_name)
+        del book.data[name]
+        book.add_record(record)
+        return "[green]Name updated.[/green]"
+
+    if field == "email":
+        new_email = " ".join(args[2:])
+        if record.email is None:
+            record.add_email(new_email)
+        else:
+            record.edit_email(new_email)
+        return "[green]Email updated.[/green]"
+
+    if field == "address":
+        new_address = " ".join(args[2:])
+        if record.address is None:
+            record.add_address(new_address)
+        else:
+            record.edit_address(new_address)
+        return "[green]Address updated.[/green]"
+
+    if field == "birthday":
+        new_birthday = args[2]
+        record.edit_birthday(new_birthday)
+        return "[green]Birthday updated.[/green]"
+
+    if field == "phone":
+        if len(args) < 4:
+            raise ValueError(
+                "[red]Usage: edit-contact \\[name] phone \\[old_phone] \\[new_phone][/red]"
+            )
+        old_phone, new_phone = args[2], args[3]
+        record.edit_phone(old_phone, new_phone)
+        return "[green]Phone updated.[/green]"
+
+    return None
 
 
 @input_error

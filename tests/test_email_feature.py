@@ -6,7 +6,7 @@ from tests._rich_stub import ensure_rich_stub
 
 ensure_rich_stub()
 
-from handlers import add_email, edit_email
+from handlers import add_email
 from models import AddressBook, Name, Record
 from validators import validate_email
 
@@ -98,43 +98,7 @@ class EmailCommandTests(unittest.TestCase):
         result = add_email([], book)
 
         self.assertEqual(
-            result, "[red]Usage: add-email [name] [email][/red]"
-        )
-
-    def test_edit_email_handler_updates_value(self):
-        book = AddressBook()
-        record = Record("Alice")
-        record.add_email("alice@example.com")
-        book.add_record(record)
-
-        result = edit_email(["Alice", "alice.work@example.com"], book)
-
-        self.assertEqual(result, "[green]Email updated.[/green]")
-        self.assertEqual(record.email.value, "alice.work@example.com")
-
-    def test_edit_email_handler_requires_existing_contact(self):
-        book = AddressBook()
-
-        result = edit_email(["Alice", "alice@example.com"], book)
-
-        self.assertEqual(result, "[red]Contact not found[/red]")
-
-    def test_edit_email_handler_requires_existing_email(self):
-        book = AddressBook()
-        record = Record("Alice")
-        book.add_record(record)
-
-        result = edit_email(["Alice", "alice@example.com"], book)
-
-        self.assertEqual(result, "[red]Email not set[/red]")
-
-    def test_edit_email_handler_requires_arguments(self):
-        book = AddressBook()
-
-        result = edit_email(["Alice"], book)
-
-        self.assertEqual(
-            result, "[red]Usage: edit-email [name] [new_email][/red]"
+            result, "[red]Usage: add-email \\[name] \\[email][/red]"
         )
 
 

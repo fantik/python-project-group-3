@@ -3,10 +3,42 @@
 from datetime import datetime
 import re
 
+
+class ContactNotFoundError(Exception):
+    """Raised when a CLI command targets a missing contact."""
+
+    def __str__(self):
+        return "[red]Contact not found[/red]"
+
+
 EMAIL_PATTERN = re.compile(
     r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+"
     r"@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$"
 )
+
+
+def validate_name(name):
+    """Return a trimmed name or raise when it has fewer than two letters."""
+    cleaned_name = name.strip() if name is not None else ""
+
+    if sum(1 for char in cleaned_name if char.isalpha()) < 2:
+        raise ValueError(
+            "[red]Name must contain at least 2 letters[/red]"
+        )
+
+    return cleaned_name
+
+
+def validate_address(address):
+    """Return a trimmed address or raise when it is too short."""
+    cleaned_address = address.strip() if address is not None else ""
+
+    if len(cleaned_address) < 3:
+        raise ValueError(
+            "[red]Address must be at least 3 characters[/red]"
+        )
+
+    return cleaned_address
 
 
 def validate_phone(phone):

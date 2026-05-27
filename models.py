@@ -3,7 +3,13 @@
 from collections import UserDict
 from datetime import datetime, timedelta
 
-from validators import validate_birthday, validate_email, validate_phone
+from validators import (
+    validate_address,
+    validate_birthday,
+    validate_email,
+    validate_name,
+    validate_phone,
+)
 
 
 class Field:
@@ -17,12 +23,10 @@ class Field:
 
 
 class Name(Field):
-    """Contact name field with non-empty validation."""
+    """Contact name field validated via the shared validator."""
 
     def __init__(self, value):
-        if value == "" or value is None:
-            raise ValueError("Name can't be empty")
-        super().__init__(value)
+        super().__init__(validate_name(value))
 
 
 class Phone(Field):
@@ -40,15 +44,10 @@ class Birthday(Field):
 
 
 class Address(Field):
-    """Address field with basic non-empty validation."""
+    """Address field validated via the shared validator."""
 
     def __init__(self, value):
-        cleaned_value = value.strip() if value is not None else ""
-        if len(cleaned_value) < 3:
-            raise ValueError(
-                "[red]Address must be at least 3 characters[/red]"
-            )
-        super().__init__(cleaned_value)
+        super().__init__(validate_address(value))
 
 
 class Email(Field):
@@ -109,6 +108,14 @@ class Record:
     def add_birthday(self, birthday):
         """Set the contact birthday from a DD.MM.YYYY string."""
         self.birthday = Birthday(birthday)
+
+    def edit_birthday(self, birthday):
+        """Replace the contact birthday from a DD.MM.YYYY string."""
+        self.birthday = Birthday(birthday)
+
+    def edit_name(self, new_name):
+        """Replace the contact name."""
+        self.name = Name(new_name)
 
     def add_address(self, address):
         """Set the contact address."""

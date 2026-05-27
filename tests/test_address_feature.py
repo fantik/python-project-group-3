@@ -6,7 +6,7 @@ from tests._rich_stub import ensure_rich_stub
 
 ensure_rich_stub()
 
-from handlers import add_address, edit_address
+from handlers import add_address
 from models import AddressBook, Name, Record
 
 
@@ -69,17 +69,6 @@ class AddressCommandTests(unittest.TestCase):
         self.assertEqual(result, "[green]Address added.[/green]")
         self.assertEqual(record.address.value, "Main Street 10")
 
-    def test_edit_address_handler_updates_value(self):
-        book = AddressBook()
-        record = Record("Alice")
-        record.add_address("Main Street 10")
-        book.add_record(record)
-
-        result = edit_address(["Alice", "Long", "Avenue", "22"], book)
-
-        self.assertEqual(result, "[green]Address updated.[/green]")
-        self.assertEqual(record.address.value, "Long Avenue 22")
-
     def test_add_address_handler_requires_existing_contact(self):
         book = AddressBook()
 
@@ -93,28 +82,7 @@ class AddressCommandTests(unittest.TestCase):
         result = add_address([], book)
 
         self.assertEqual(
-            result, "[red]Usage: add-address [name] [address][/red]"
-        )
-
-    def test_edit_address_handler_returns_validation_error(self):
-        book = AddressBook()
-        record = Record("Alice")
-        record.add_address("Main Street 10")
-        book.add_record(record)
-
-        result = edit_address(["Alice", "xy"], book)
-
-        self.assertEqual(
-            result, "[red]Address must be at least 3 characters[/red]"
-        )
-
-    def test_edit_address_handler_requires_arguments(self):
-        book = AddressBook()
-
-        result = edit_address(["Alice"], book)
-
-        self.assertEqual(
-            result, "[red]Usage: edit-address [name] [new_address][/red]"
+            result, "[red]Usage: add-address \\[name] \\[address][/red]"
         )
 
 
