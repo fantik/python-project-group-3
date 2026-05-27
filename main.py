@@ -13,6 +13,7 @@ from handlers import (
     show_all,
     show_birthday,
     show_phone,
+    remove_contact,
 )
 from storage import StorageError, StorageSaveError, load_data, save_data
 
@@ -36,6 +37,7 @@ def main():
         "add-birthday": lambda args: add_birthday(args, book),
         "show-birthday": lambda args: show_birthday(args, book),
         "birthdays": lambda args: birthdays(args, book),
+        "remove-contact": lambda args: remove_contact(args, book),
     }
 
     rprint("[cyan]Welcome to the assistant bot![/cyan]")

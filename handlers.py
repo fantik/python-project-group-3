@@ -416,3 +416,26 @@ def birthdays(args, book):
         )
 
     console.print(table)
+
+@input_error
+def remove_contact(args, book):
+    """Removes contact completely after a confirmation"""
+    if not args:
+        raise ValueError("Give me name please.")
+    
+    name = " ".join(args)
+    
+    record = book.find(name)
+    if record is None:
+        raise KeyError("Contact not found")
+
+    print(f"  You are about to delete contact '{name}'")
+    confirm = input("Are you sure? (y/n): ").strip().lower()
+
+    if confirm in ['y', 'yes']:
+        if book.delete(name):
+            return f"Contact '{name}' has been deleted successfully."
+        else:
+            return "Error deleting contact."
+    else:
+        return "Deletion cancelled."
