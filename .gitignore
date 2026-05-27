@@ -2,6 +2,7 @@
 .venv/
 venv/
 env/
+.uv-cache/
 
 # Byte-compiled / cache
 __pycache__/
@@ -14,6 +15,7 @@ build/
 dist/
 *.egg-info/
 .eggs/
+docs/build/
 
 # Test / lint / type check caches
 .pytest_cache/

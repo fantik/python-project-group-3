@@ -3,10 +3,14 @@
 from rich import print as rprint
 
 from handlers import (
+    add_address,
     add_birthday,
     add_contact,
+    add_email,
     birthdays,
     change_contact,
+    edit_address,
+    edit_email,
     parse_input,
     show_all,
     show_birthday,
@@ -25,6 +29,10 @@ def main():
         "change": lambda args: change_contact(args, book),
         "phone": lambda args: show_phone(args, book),
         "all": lambda args: show_all(book),
+        "add-address": lambda args: add_address(args, book),
+        "edit-address": lambda args: edit_address(args, book),
+        "add-email": lambda args: add_email(args, book),
+        "edit-email": lambda args: edit_email(args, book),
         "add-birthday": lambda args: add_birthday(args, book),
         "show-birthday": lambda args: show_birthday(args, book),
         "birthdays": lambda args: birthdays(book),
