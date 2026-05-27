@@ -11,6 +11,7 @@ from handlers import (
     NOTE_BULLET,
     add_note,
     all_notes,
+    edit_note,
     find_note,
     remove_note,
 )
@@ -53,6 +54,17 @@ class RecordNoteTests(unittest.TestCase):
         record.add_note("buy milk")
         record.remove_note("buy milk")
         self.assertEqual(record.notes, [])
+
+    def test_edit_note_replaces_existing_value(self):
+        record = Record("Alice")
+        record.add_note("buy milk")
+        record.edit_note("buy milk", "buy oat milk")
+        self.assertEqual(record.notes[0].value, "buy oat milk")
+
+    def test_edit_note_requires_existing_note(self):
+        record = Record("Alice")
+        with self.assertRaisesRegex(ValueError, "Old note not found"):
+            record.edit_note("buy milk", "buy oat milk")
 
     def test_find_notes_by_query_matches_substring(self):
         record = Record("Olga")
@@ -155,6 +167,22 @@ class NoteCommandTests(unittest.TestCase):
             printed[0].rows[0][0],
             f"{NOTE_BULLET} buy milk",
         )
+
+    def test_edit_note_handler_updates_note(self):
+        book = AddressBook()
+        record = Record("Olga")
+        record.add_note("buy milk")
+        book.add_record(record)
+
+        result = edit_note(["Olga", "buy milk", "buy oat milk"], book)
+
+        self.assertEqual(result, "[green]Note edited.[/green]")
+        self.assertEqual(record.notes[0].value, "buy oat milk")
+
+    def test_edit_note_handler_reports_missing_contact(self):
+        book = AddressBook()
+        result = edit_note(["Olga", "buy milk", "buy oat milk"], book)
+        self.assertEqual(result, "[red]Contact not found[/red]")
 
     def test_remove_note_handler_removes_note(self):
         book = AddressBook()
