@@ -79,6 +79,7 @@ def load_data(filename=FILE_NAME):
             OSError,
             ImportError,
             AttributeError,
+            ValueError,
         ) as exc:
             raise StorageError(filename) from exc
 
