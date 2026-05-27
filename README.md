@@ -100,7 +100,9 @@ The project can be extended with additional functionality:
 ## 🧱 Tech Stack
 
 - Python 3.10+
+- uv
 - Rich (CLI UI)
+- Sphinx
 - Pickle (data serialization)
 - OOP architecture (UserDict-based storage)
 
@@ -110,11 +112,16 @@ The project can be extended with additional functionality:
 
 ```
 python-project-group-3/
+├── pyproject.toml       # Project metadata and uv dependencies
+├── uv.lock              # Locked dependency versions for uv
 ├── main.py              # CLI entry point
+├── contacts.py          # Compatibility re-export for contact models
 ├── models.py            # Field, Record, AddressBook
+├── validators.py        # Shared validation helpers
 ├── storage.py           # save/load persistence
 ├── handlers.py          # Command handlers and input parsing
-├── requirements.txt     # Dependencies
+├── tests/               # Automated tests
+├── docs/                # Sphinx documentation
 ├── addressbook.pkl      # Local storage (auto-generated)
 ├── .gitignore
 └── README.md
@@ -131,32 +138,35 @@ git clone git@github.com:fantik/python-project-group-3.git
 cd python-project-group-3
 ```
 
-### 2. Create virtual environment
-
-**macOS / Linux**
+### 2. Sync dependencies with uv
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+uv sync
 ```
 
-**Windows (PowerShell)**
-
-```powershell
-python -m venv venv
-venv\Scripts\activate
-```
-
-### 3. Install dependencies
+### 3. Run application
 
 ```bash
-pip install -r requirements.txt
+uv run python main.py
 ```
 
-### 4. Run application
+### 4. Run tests
 
 ```bash
-python3 main.py
+uv run python -m unittest discover -s tests
+```
+
+### 5. Build Sphinx documentation
+
+```bash
+uv sync --group docs
+LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 uv run --group docs sphinx-build -b html docs/source docs/build/html
+```
+
+After the build finishes, open:
+
+```text
+docs/build/html/index.html
 ```
 
 ---
@@ -201,6 +211,10 @@ Then create a Pull Request into `main`.
 | -------- | ----------------------------------- |
 | `add`    | `add John 1234567890`               |
 | `change` | `change John 1234567890 0987654321` |
+| `add-address` | `add-address John 221B Baker Street` |
+| `edit-address` | `edit-address John 10 Downing Street` |
+| `add-email` | `add-email John john@example.com` |
+| `edit-email` | `edit-email John john.work@example.com` |
 | `phone`  | `phone John`                        |
 | `all`    | Show all contacts                   |
 

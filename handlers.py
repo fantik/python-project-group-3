@@ -30,6 +30,12 @@ def input_error(func):
     return wrapper
 
 
+def require_min_args(args, count, usage):
+    """Validate minimum CLI arity for handlers with free-form trailing text."""
+    if len(args) < count:
+        raise ValueError(f"[red]Usage: {usage}[/red]")
+
+
 @input_error
 def add_contact(args, book):
     """Add or update a contact with a phone number."""
@@ -54,7 +60,7 @@ def change_contact(args, book):
     record = book.find(name)
 
     if record is None:
-        raise KeyError
+        return "[red]Contact not found[/red]"
 
     record.edit_phone(old_phone, new_phone)
     return "[green]Contact changed.[/green]"
@@ -85,6 +91,8 @@ def show_all(book):
     table.add_column("Name", style="cyan")
     table.add_column("Phones", style="green")
     table.add_column("Birthday", style="yellow")
+    table.add_column("Address", style="magenta")
+    table.add_column("Email", style="blue")
 
     for record in book.data.values():
         phones = "; ".join(phone.value for phone in record.phones)
@@ -94,11 +102,17 @@ def show_all(book):
             if record.birthday
             else "-"
         )
+        address_field = getattr(record, "address", None)
+        address = address_field.value if address_field else "-"
+        email_field = getattr(record, "email", None)
+        email = email_field.value if email_field else "-"
 
         table.add_row(
             record.name.value,
             phones,
             birthday,
+            address,
+            email,
         )
 
     console.print(table)
@@ -111,10 +125,70 @@ def add_birthday(args, book):
     record = book.find(name)
 
     if record is None:
-        raise KeyError
+        return "[red]Contact not found[/red]"
 
     record.add_birthday(birthday)
     return "[green]Birthday added.[/green]"
+
+
+@input_error
+def add_address(args, book):
+    """Set a contact's address."""
+    require_min_args(args, 2, "add-address [name] [address]")
+    name = args[0]
+    address = " ".join(args[1:])
+    record = book.find(name)
+
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    record.add_address(address)
+    return "[green]Address added.[/green]"
+
+
+@input_error
+def edit_address(args, book):
+    """Replace a contact's address."""
+    require_min_args(args, 2, "edit-address [name] [new_address]")
+    name = args[0]
+    new_address = " ".join(args[1:])
+    record = book.find(name)
+
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    record.edit_address(new_address)
+    return "[green]Address updated.[/green]"
+
+
+@input_error
+def add_email(args, book):
+    """Set a contact's email."""
+    require_min_args(args, 2, "add-email [name] [email]")
+    name = args[0]
+    email = " ".join(args[1:])
+    record = book.find(name)
+
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    record.add_email(email)
+    return "[green]Email added.[/green]"
+
+
+@input_error
+def edit_email(args, book):
+    """Replace a contact's email."""
+    require_min_args(args, 2, "edit-email [name] [new_email]")
+    name = args[0]
+    new_email = " ".join(args[1:])
+    record = book.find(name)
+
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    record.edit_email(new_email)
+    return "[green]Email updated.[/green]"
 
 
 @input_error
@@ -124,7 +198,7 @@ def show_birthday(args, book):
     record = book.find(name)
 
     if record is None:
-        raise KeyError
+        return "[red]Contact not found[/red]"
 
     if record.birthday is None:
         return "[red]Birthday not set[/red]"
