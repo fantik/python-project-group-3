@@ -9,6 +9,7 @@ from models import (
     Name,
     Phone,
     Record,
+    Note,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "Name",
     "Phone",
     "Record",
+    "Note",
 ]
