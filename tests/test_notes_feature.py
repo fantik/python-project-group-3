@@ -30,8 +30,8 @@ class NoteValidationTests(unittest.TestCase):
             validate_note("ab")
 
     def test_validate_note_rejects_too_long_value(self):
-        with self.assertRaisesRegex(ValueError, "less than 500 characters"):
-            validate_note("x" * 501)
+        with self.assertRaisesRegex(ValueError, "less than 100 characters"):
+            validate_note("x" * 101)
 
 
 class RecordNoteTests(unittest.TestCase):
@@ -167,6 +167,33 @@ class NoteCommandTests(unittest.TestCase):
             printed[0].rows[0][0],
             f"{NOTE_BULLET} buy milk",
         )
+
+    def test_all_notes_handler_accepts_multi_word_contact_name(self):
+        book = AddressBook()
+        record = Record("Mary Jane")
+        record.add_note("buy milk")
+        book.add_record(record)
+        printed = []
+
+        class CapturingTable:
+            def __init__(self, title=None):
+                self.title = title
+                self.rows = []
+
+            def add_column(self, *args, **kwargs):
+                return None
+
+            def add_row(self, *values):
+                self.rows.append(values)
+
+        with (
+            patch("handlers.Table", CapturingTable),
+            patch("handlers.console.print", side_effect=printed.append),
+        ):
+            result = all_notes(["Mary", "Jane"], book)
+
+        self.assertIsNone(result)
+        self.assertEqual(printed[0].title, "All notes for Mary Jane")
 
     def test_edit_note_handler_updates_note(self):
         book = AddressBook()
