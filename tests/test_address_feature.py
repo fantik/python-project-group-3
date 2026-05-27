@@ -76,13 +76,39 @@ class AddressCommandTests(unittest.TestCase):
 
         self.assertEqual(result, "[red]Contact not found[/red]")
 
+    def test_add_address_handler_accepts_multi_word_contact_name(self):
+        book = AddressBook()
+        record = Record("Alice Main")
+        book.add_record(record)
+
+        result = add_address(["Alice", "Main", "Street", "10"], book)
+
+        self.assertEqual(result, "[green]Address added.[/green]")
+        self.assertEqual(record.address.value, "Street 10")
+
+    def test_add_address_handler_rejects_ambiguous_overlapping_names(self):
+        book = AddressBook()
+        alice = Record("Alice")
+        alice_main = Record("Alice Main")
+        book.add_record(alice)
+        book.add_record(alice_main)
+
+        result = add_address(["Alice", "Main", "Street", "10"], book)
+
+        self.assertEqual(
+            result,
+            "[red]Ambiguous contact name. Please use a unique name.[/red]",
+        )
+        self.assertIsNone(alice.address)
+        self.assertIsNone(alice_main.address)
+
     def test_add_address_handler_requires_arguments(self):
         book = AddressBook()
 
         result = add_address([], book)
 
         self.assertEqual(
-            result, "[red]Usage: add-address \\[name] \\[address][/red]"
+            result, "[red]Usage: add-address [name] [address][/red]"
         )
 
 

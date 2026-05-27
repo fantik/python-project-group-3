@@ -14,12 +14,16 @@ from handlers import (
     show_birthday,
     show_phone,
 )
-from storage import load_data, save_data
+from storage import StorageError, StorageSaveError, load_data, save_data
 
 
 def main():
     """Run the address book CLI loop."""
-    book = load_data()
+    try:
+        book = load_data()
+    except StorageError as exc:
+        rprint(str(exc))
+        return
 
     commands = {
         "hello": lambda args: "How can I help you?",
@@ -31,15 +35,27 @@ def main():
         "edit-contact": lambda args: edit_contact(args, book),
         "add-birthday": lambda args: add_birthday(args, book),
         "show-birthday": lambda args: show_birthday(args, book),
-        "birthdays": lambda args: birthdays(book),
+        "birthdays": lambda args: birthdays(args, book),
     }
 
     rprint("[cyan]Welcome to the assistant bot![/cyan]")
 
     try:
         while True:
-            user_input = input("Enter a command: ")
+            try:
+                user_input = input("Enter a command: ")
+            except (EOFError, KeyboardInterrupt):
+                rprint("[cyan]Good bye![/cyan]")
+                break
+
             command, *args = parse_input(user_input)
+
+            if command == "__parse_error__":
+                rprint(f"[red]Invalid input: {args[0]}[/red]")
+                continue
+
+            if not command:
+                continue
 
             if command in ["close", "exit"]:
                 rprint("[cyan]Good bye![/cyan]")
@@ -55,7 +71,10 @@ def main():
             else:
                 rprint("[red]Invalid command.[/red]")
     finally:
-        save_data(book)
+        try:
+            save_data(book)
+        except StorageSaveError as exc:
+            rprint(str(exc))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,15 @@
+{
+  "python.testing.unittestEnabled": true,
+  "python.testing.pytestEnabled": false,
+  "python.testing.unittestArgs": [
+    "-s",
+    "tests",
+    "-p",
+    "test*.py"
+  ],
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true
+  },
+  "files.eol": "\n"
+}

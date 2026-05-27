@@ -196,7 +196,26 @@ uv run python main.py
 uv run python -m unittest discover -s tests
 ```
 
-### 6. Build Sphinx documentation
+### 6. Check test coverage
+
+```bash
+uv run python -m coverage run -m unittest discover -s tests
+uv run python -m coverage report -m
+```
+
+To generate an HTML report:
+
+```bash
+uv run python -m coverage html
+```
+
+Then open:
+
+```text
+htmlcov/index.html
+```
+
+### 7. Build Sphinx documentation
 
 ```bash
 uv sync --group docs
@@ -249,7 +268,7 @@ Then create a Pull Request into `main`.
 
 | Command        | Example                                 |
 | -------------- | --------------------------------------- |
-| `add`          | `add John 1234567890`                   |
+| `add`          | `add John 0671234567`                   |
 | `add-address`  | `add-address John 221B Baker Street`    |
 | `add-email`    | `add-email John john@example.com`       |
 | `edit-contact` | `edit-contact John email john@work.com` |
@@ -262,7 +281,7 @@ Then create a Pull Request into `main`.
 | --------------- | ------------------------------ |
 | `add-birthday`  | `add-birthday John 01.01.2000` |
 | `show-birthday` | `show-birthday John`           |
-| `birthdays`     | Show upcoming birthdays        |
+| `birthdays`     | `birthdays` or `birthdays 14`  |
 
 ### Edit contact (`edit-contact`)
 
@@ -308,7 +327,7 @@ addressbook.pkl
 ## 🧪 Example Usage
 
 ```
-Enter a command: add John 1234567890
+Enter a command: add John 0671234567
 Contact added.
 
 Enter a command: add-birthday John 01.01.2000

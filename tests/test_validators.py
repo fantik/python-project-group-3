@@ -38,6 +38,14 @@ class PhoneRecordTests(unittest.TestCase):
 
         self.assertEqual(record.find_phone("380671234567"), "0671234567")
 
+    def test_find_phone_raises_when_value_is_missing(self):
+        record = Record("Alice")
+
+        with self.assertRaisesRegex(
+            ValueError, "The phone was not found in the list"
+        ):
+            record.find_phone("0671234567")
+
     def test_edit_phone_accepts_original_plus_format(self):
         record = Record("Alice")
         record.add_phone("+380671234567")
