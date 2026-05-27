@@ -1,5 +1,6 @@
 """Provide a tiny ``rich`` stub so tests can run without the dependency."""
 
+import builtins
 import importlib
 import sys
 import types
@@ -34,6 +35,7 @@ def ensure_rich_stub():
 
     console_module.Console = Console
     table_module.Table = Table
+    rich_module.print = builtins.print
     sys.modules["rich"] = rich_module
     sys.modules["rich.console"] = console_module
     sys.modules["rich.table"] = table_module

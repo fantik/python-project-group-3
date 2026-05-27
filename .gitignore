@@ -33,7 +33,6 @@ addressbook.pkl
 
 # IDE / editor
 .idea/
-.vscode/
 *.swp
 *.swo
 *~

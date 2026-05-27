@@ -92,13 +92,39 @@ class EmailCommandTests(unittest.TestCase):
 
         self.assertEqual(result, "[red]Invalid email format[/red]")
 
+    def test_add_email_handler_accepts_multi_word_contact_name(self):
+        book = AddressBook()
+        record = Record("Alice Smith")
+        book.add_record(record)
+
+        result = add_email(
+            ["Alice", "Smith", "alice.smith@example.com"],
+            book,
+        )
+
+        self.assertEqual(result, "[green]Email added.[/green]")
+        self.assertEqual(record.email.value, "alice.smith@example.com")
+
+    def test_add_email_handler_reports_missing_multi_word_contact(self):
+        book = AddressBook()
+        record = Record("Alice")
+        book.add_record(record)
+
+        result = add_email(
+            ["Alice", "Smith", "alice.smith@example.com"],
+            book,
+        )
+
+        self.assertEqual(result, "[red]Contact not found[/red]")
+        self.assertIsNone(record.email)
+
     def test_add_email_handler_requires_arguments(self):
         book = AddressBook()
 
         result = add_email([], book)
 
         self.assertEqual(
-            result, "[red]Usage: add-email \\[name] \\[email][/red]"
+            result, "[red]Usage: add-email [name] [email][/red]"
         )
 
 

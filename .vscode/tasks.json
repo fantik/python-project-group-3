@@ -1,0 +1,117 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run app",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "main.py"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run tests",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run coverage",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "coverage",
+        "run",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests"
+      ],
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Coverage report",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "coverage",
+        "report",
+        "-m"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Sync docs dependencies",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "sync",
+        "--group",
+        "docs"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Build docs",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "run",
+        "--group",
+        "docs",
+        "sphinx-build",
+        "-b",
+        "html",
+        "docs/source",
+        "docs/build/html"
+      ],
+      "options": {
+        "env": {
+          "LC_ALL": "en_US.UTF-8",
+          "LANG": "en_US.UTF-8"
+        }
+      },
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

@@ -98,12 +98,12 @@ class Record:
         raise ValueError("[red]Old phone not found[/red]")
 
     def find_phone(self, phone):
-        """Return phone value if found, else a ValueError instance."""
+        """Return phone value if found, else raise ValueError."""
         normalized_phone = validate_phone(phone)
         for ph in self.phones:
             if ph.value == normalized_phone:
                 return ph.value
-        return ValueError("[red]The phone was not found in the list[/red]")
+        raise ValueError("[red]The phone was not found in the list[/red]")
 
     def add_birthday(self, birthday):
         """Set the contact birthday from a DD.MM.YYYY string."""
@@ -153,6 +153,20 @@ class Record:
             f"birthday: {birthday}, address: {address}, email: {email}"
         )
 
+    def days_to_birthday(self, today=None):
+        """Return days until the next birthday, or None if not set."""
+        if self.birthday is None:
+            return None
+
+        today = today or datetime.today().date()
+        birthday = self.birthday.value.date()
+        next_birthday = _birthday_for_year(birthday, today.year)
+
+        if next_birthday < today:
+            next_birthday = _birthday_for_year(birthday, today.year + 1)
+
+        return (next_birthday - today).days
+
 
 def _birthday_for_year(birthday, year):
     """Project a birthday into a target year, handling Feb 29 safely."""
@@ -182,8 +196,8 @@ class AddressBook(UserDict):
         else:
             raise ValueError("[red]Record not found[/red]")
 
-    def get_upcoming_birthdays(self):
-        """Return contacts with birthdays in the next 7 days."""
+    def get_upcoming_birthdays(self, days=7):
+        """Return contacts with birthdays in the next ``days`` days."""
         results = []
         today = datetime.today().date()
 
@@ -200,7 +214,7 @@ class AddressBook(UserDict):
                 )
 
             day_difference = (birthday_this_year - today).days
-            if 0 <= day_difference <= 7:
+            if 0 <= day_difference <= days:
                 birth_date = birthday_this_year
 
                 # Saturday -> Monday (+2); Sunday -> Monday (+1)
@@ -215,6 +229,7 @@ class AddressBook(UserDict):
                         "congratulation_date": birth_date.strftime(
                             "%d.%m.%Y"
                         ),
+                        "days_left": day_difference,
                     }
                 )
 

@@ -54,6 +54,22 @@ Run tests
 
    uv run python -m unittest discover -s tests
 
+Check test coverage
+-------------------
+
+.. code-block:: bash
+
+   uv run python -m coverage run -m unittest discover -s tests
+   uv run python -m coverage report -m
+
+To generate an HTML report:
+
+.. code-block:: bash
+
+   uv run python -m coverage html
+
+Then open ``htmlcov/index.html``.
+
 Build documentation
 -------------------
 
