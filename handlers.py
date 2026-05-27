@@ -4,6 +4,7 @@ from functools import wraps
 import shlex
 
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
 from models import Record
@@ -17,6 +18,7 @@ from validators import (
 )
 
 console = Console()
+PLACEHOLDER = "—"
 
 
 def parse_input(user_input):
@@ -122,7 +124,6 @@ def show_all(book):
     if not book.data:
         return "[red]No contacts found[/red]"
 
-    placeholder = "—"
     table = Table(title="Contacts")
     table.add_column("Name", style="cyan")
     table.add_column("Phones", style="green")
@@ -132,37 +133,79 @@ def show_all(book):
     table.add_column("Days to birthday", style="bright_yellow")
 
     for record in book.data.values():
-        phones = "; ".join(phone.value for phone in record.phones)
-        phones = phones or placeholder
-
-        email_field = getattr(record, "email", None)
-        email = email_field.value if email_field else placeholder
-
-        address_field = getattr(record, "address", None)
-        address = address_field.value if address_field else placeholder
-
-        birthday_value = (
-            record.birthday.value.strftime("%d.%m.%Y")
-            if record.birthday
-            else placeholder
-        )
-        days_to_birthday = record.days_to_birthday()
-        days_to_birthday = (
-            str(days_to_birthday)
-            if days_to_birthday is not None
-            else placeholder
-        )
+        details = get_contact_details(record)
 
         table.add_row(
-            record.name.value,
-            phones,
-            email,
-            address,
-            birthday_value,
-            days_to_birthday,
+            details["name"],
+            details["phones"],
+            details["email"],
+            details["address"],
+            details["birthday"],
+            details["days_to_birthday"],
         )
 
     console.print(table)
+
+
+def get_contact_details(record):
+    """Return a user-facing mapping of contact fields."""
+    phones = "; ".join(phone.value for phone in record.phones) or PLACEHOLDER
+    email_field = getattr(record, "email", None)
+    address_field = getattr(record, "address", None)
+    days_to_birthday = record.days_to_birthday()
+
+    return {
+        "name": record.name.value,
+        "phones": phones,
+        "email": email_field.value if email_field else PLACEHOLDER,
+        "address": (
+            address_field.value if address_field else PLACEHOLDER
+        ),
+        "birthday": (
+            record.birthday.value.strftime("%d.%m.%Y")
+            if record.birthday
+            else PLACEHOLDER
+        ),
+        "days_to_birthday": (
+            str(days_to_birthday)
+            if days_to_birthday is not None
+            else PLACEHOLDER
+        ),
+    }
+
+
+@input_error
+def show_contact(args, book):
+    """Print a single contact in a Rich panel."""
+    require_min_args(args, 1, "show-contact [name]")
+    name = join_name_parts(args)
+    record = book.find(name)
+
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    details = get_contact_details(record)
+    panel_body = "\n".join(
+        [
+            f"[bold cyan]Name:[/bold cyan] {details['name']}",
+            f"[bold green]Phones:[/bold green] {details['phones']}",
+            f"[bold blue]Email:[/bold blue] {details['email']}",
+            f"[bold magenta]Address:[/bold magenta] {details['address']}",
+            f"[bold yellow]Birthday:[/bold yellow] {details['birthday']}",
+            (
+                "[bold bright_yellow]Days to birthday:"
+                f"[/bold bright_yellow] {details['days_to_birthday']}"
+            ),
+        ]
+    )
+    panel = Panel(
+        panel_body,
+        title="Contact details",
+        subtitle=details["name"],
+        border_style="cyan",
+        expand=False,
+    )
+    console.print(panel)
 
 
 @input_error
@@ -419,23 +462,22 @@ def birthdays(args, book):
 
 @input_error
 def remove_contact(args, book):
-    """Removes contact completely after a confirmation"""
-    if not args:
-        raise ValueError("Give me name please.")
-    
-    name = " ".join(args)
-    
+    """Remove a contact completely after confirmation."""
+    require_min_args(args, 1, "remove-contact [name]")
+    name = join_name_parts(args)
+
     record = book.find(name)
     if record is None:
-        raise KeyError("Contact not found")
+        raise ContactNotFoundError()
 
     print(f"  You are about to delete contact '{name}'")
-    confirm = input("Are you sure? (y/n): ").strip().lower()
+    try:
+        confirm = input("Are you sure? (y/n): ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        return "[yellow]Deletion cancelled.[/yellow]"
 
-    if confirm in ['y', 'yes']:
-        if book.delete(name):
-            return f"Contact '{name}' has been deleted successfully."
-        else:
-            return "Error deleting contact."
-    else:
-        return "Deletion cancelled."
+    if confirm in ["y", "yes"]:
+        book.delete(name)
+        return f"[green]Contact '{name}' has been deleted successfully.[/green]"
+
+    return "[yellow]Deletion cancelled.[/yellow]"

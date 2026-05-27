@@ -11,12 +11,14 @@ def ensure_rich_stub():
     try:
         importlib.import_module("rich.console")
         importlib.import_module("rich.table")
+        importlib.import_module("rich.panel")
         return
     except ModuleNotFoundError:
         pass
 
     rich_module = types.ModuleType("rich")
     console_module = types.ModuleType("rich.console")
+    panel_module = types.ModuleType("rich.panel")
     table_module = types.ModuleType("rich.table")
 
     class Console:
@@ -33,9 +35,15 @@ def ensure_rich_stub():
         def add_row(self, *args, **kwargs):
             return None
 
+    class Panel:
+        def __init__(self, *args, **kwargs):
+            return None
+
     console_module.Console = Console
+    panel_module.Panel = Panel
     table_module.Table = Table
     rich_module.print = builtins.print
     sys.modules["rich"] = rich_module
     sys.modules["rich.console"] = console_module
+    sys.modules["rich.panel"] = panel_module
     sys.modules["rich.table"] = table_module
