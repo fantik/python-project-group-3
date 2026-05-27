@@ -142,33 +142,41 @@ cd python-project-group-3
 
 [uv](https://docs.astral.sh/uv/) is a fast Python package and project manager. It supports **macOS**, **Linux**, and **Windows**.
 
-**macOS and Linux** (recommended — standalone installer):
+**macOS / Linux (Homebrew)**
+
+Install Homebrew first if needed:
+[Homebrew installation guide](https://brew.sh/)
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+brew install uv
 ```
 
-Restart your terminal, then verify:
+**Windows (Chocolatey)**
+
+Install Chocolatey first if needed:
+[Chocolatey installation guide](https://chocolatey.org/install)
+
+```powershell
+choco install uv
+```
+
+**Windows (WinGet)**
+
+WinGet is the Microsoft package manager for Windows.
+If you do not have WinGet yet, see the
+[Microsoft WinGet installation guide](https://learn.microsoft.com/en-us/windows/package-manager/winget/).
+
+```powershell
+winget install --id=astral-sh.uv -e
+```
+
+Then verify:
 
 ```bash
 uv --version
 ```
 
-**Windows** (PowerShell):
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-**Alternative** (any OS with Python/pip already installed):
-
-```bash
-pip install uv
-# or
-pipx install uv
-```
-
-For Homebrew, WinGet, Scoop, and other methods, see the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+For other installation methods, see the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
 
 ### 3. Sync dependencies with uv
 
