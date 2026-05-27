@@ -462,23 +462,22 @@ def birthdays(args, book):
 
 @input_error
 def remove_contact(args, book):
-    """Removes contact completely after a confirmation"""
-    if not args:
-        raise ValueError("Give me name please.")
-    
-    name = " ".join(args)
-    
+    """Remove a contact completely after confirmation."""
+    require_min_args(args, 1, "remove-contact [name]")
+    name = join_name_parts(args)
+
     record = book.find(name)
     if record is None:
-        raise KeyError("Contact not found")
+        raise ContactNotFoundError()
 
     print(f"  You are about to delete contact '{name}'")
-    confirm = input("Are you sure? (y/n): ").strip().lower()
+    try:
+        confirm = input("Are you sure? (y/n): ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        return "[yellow]Deletion cancelled.[/yellow]"
 
-    if confirm in ['y', 'yes']:
-        if book.delete(name):
-            return f"Contact '{name}' has been deleted successfully."
-        else:
-            return "Error deleting contact."
-    else:
-        return "Deletion cancelled."
+    if confirm in ["y", "yes"]:
+        book.delete(name)
+        return f"[green]Contact '{name}' has been deleted successfully.[/green]"
+
+    return "[yellow]Deletion cancelled.[/yellow]"
