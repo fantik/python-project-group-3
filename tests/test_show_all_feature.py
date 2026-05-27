@@ -28,7 +28,7 @@ class CapturingTable:
         self.columns = []
         self.rows = []
 
-    def add_column(self, name, style=None):
+    def add_column(self, name, style=None, **kwargs):
         self.columns.append((name, style))
 
     def add_row(self, *values):
@@ -73,6 +73,7 @@ class ShowAllTests(unittest.TestCase):
                 "Address",
                 "Birthday",
                 "Days to birthday",
+                "Notes",
             ],
         )
         self.assertEqual(
@@ -84,11 +85,13 @@ class ShowAllTests(unittest.TestCase):
                 "Main Street 10",
                 "30.05.2000",
                 "3",
+                "—",
             ),
         )
+        self.assertEqual(table.rows[1], ("", "", "", "", "", "", ""))
         self.assertEqual(
-            table.rows[1],
-            ("Bob", "—", "—", "—", "—", "—"),
+            table.rows[2],
+            ("Bob", "—", "—", "—", "—", "—", "—"),
         )
 
 
