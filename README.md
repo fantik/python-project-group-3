@@ -57,11 +57,12 @@ The personal assistant must be able to:
 
 | Requirement                                          | Status |
 | ---------------------------------------------------- | ------ |
-| Add contacts (name, address, phone, email, birthday) | ❌     |
-| Search contacts by criteria (e.g. name)              | ❌     |
-| Edit and delete contacts                             | ❌     |
-| Show upcoming birthdays (N days range)               | ❌     |
-| Validate phone number and email                      | ❌     |
+| Add contacts (name, address, phone, email, birthday) | ✅     |
+| Search contacts by criteria (exact name)             | ✅     |
+| Edit contacts                                        | ✅     |
+| Delete contacts                                      | ✅     |
+| Show upcoming birthdays (N days range)               | ✅     |
+| Validate phone number and email                      | ✅     |
 
 ### 📝 Notes Management
 
@@ -74,8 +75,8 @@ The personal assistant must be able to:
 
 | Requirement                    | Status |
 | ------------------------------ | ------ |
-| Store all data locally on disk | ❌     |
-| Persist data across restarts   | ❌     |
+| Store all data locally on disk | ✅     |
+| Persist data across restarts   | ✅     |
 
 ---
 
@@ -268,19 +269,21 @@ Then create a Pull Request into `main`.
 
 | Command        | Example                                 |
 | -------------- | --------------------------------------- |
-| `add`          | `add John 0671234567`                   |
-| `add-address`  | `add-address John 221B Baker Street`    |
-| `add-email`    | `add-email John john@example.com`       |
-| `edit-contact` | `edit-contact John email john@work.com` |
-| `phone`        | `phone John`                            |
+| `add`          | `add "Vasilij Olexandrovich Melnik" 0500000000`                   |
+| `add-address`  | `add-address "Vasilij Olexandrovich Melnik" Petržílkova 2583/15, 158 00 Praha 13-Stodůlky`    |
+| `add-email`    | `add-email "Vasilij Olexandrovich Melnik" vasilij.melnik@example.com`       |
+| `edit-contact` | `edit-contact "Vasilij Olexandrovich Melnik" email vasilij.olexandrovich.melnik@gmail.com` |
+| `remove-contact` | `remove-contact "Vasilij Olexandrovich Melnik"` |
+| `phone`        | `phone "Vasilij Olexandrovich Melnik"`                            |
+| `show-contact` | `show-contact "Vasilij Olexandrovich Melnik"`                     |
 | `all`          | Show all contacts                       |
 
 ### Birthdays
 
 | Command         | Example                        |
 | --------------- | ------------------------------ |
-| `add-birthday`  | `add-birthday John 01.01.2000` |
-| `show-birthday` | `show-birthday John`           |
+| `add-birthday`  | `add-birthday "Vasilij Olexandrovich Melnik" 06.09.1996` |
+| `show-birthday` | `show-birthday "Vasilij Olexandrovich Melnik"`           |
 | `birthdays`     | `birthdays` or `birthdays 14`  |
 
 ### Edit contact (`edit-contact`)
@@ -289,13 +292,13 @@ Update any contact field in one command. All values are validated through `valid
 
 | Field      | Example                                              |
 | ---------- | ---------------------------------------------------- |
-| `name`     | `edit-contact John name Jonathan`                    |
-| `email`    | `edit-contact John email john.work@example.com`      |
-| `address`  | `edit-contact John address 10 Downing Street London` |
-| `phone`    | `edit-contact John phone 0671234567 0501234567`      |
-| `birthday` | `edit-contact John birthday 15.06.1990`              |
+| `name`     | `edit-contact "Vasilij Olexandrovich Melnik" name "Vasilij Melnik"`                    |
+| `email`    | `edit-contact "Vasilij Olexandrovich Melnik" email vasilij.olexandrovich.melnik@gmail.com`      |
+| `address`  | `edit-contact "Vasilij Olexandrovich Melnik" address Anny Letenské 1197/3, 120 00, Praha 2 - Vinohrady` |
+| `phone`    | `edit-contact "Vasilij Olexandrovich Melnik" phone 0500000000 +380733664142`      |
+| `birthday` | `edit-contact "Vasilij Olexandrovich Melnik" birthday 09.06.1996`              |
 
-- **Name** must contain at least 2 letters.
+- **Name** must contain at least 2 letters. Multi-word names are supported.
 - **Phone** requires the old and new numbers (same rules as `change`).
 - If the contact does not exist, the bot shows `[red]Contact not found[/red]`.
 
@@ -327,14 +330,14 @@ addressbook.pkl
 ## 🧪 Example Usage
 
 ```
-Enter a command: add John 0671234567
+Enter a command: add "Vasilij Olexandrovich Melnik" 0500000000
 Contact added.
 
-Enter a command: add-birthday John 01.01.2000
+Enter a command: add-birthday "Vasilij Olexandrovich Melnik" 06.09.1996
 Birthday added.
 
-Enter a command: birthdays
+Enter a command: show-contact "Vasilij Olexandrovich Melnik"
 
-Enter a command: edit-contact John email john.work@example.com
+Enter a command: edit-contact "Vasilij Olexandrovich Melnik" email vasilij.olexandrovich.melnik@gmail.com
 Email updated.
 ```
