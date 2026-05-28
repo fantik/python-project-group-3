@@ -185,6 +185,21 @@ For other installation methods, see the [official installation guide](https://do
 uv sync
 ```
 
+### (Optional) Install developer dependencies
+
+Some commands below (coverage, docs) require extra dependency groups defined in `pyproject.toml`.
+
+```bash
+# Coverage tools
+uv sync --group dev
+
+# Sphinx docs
+uv sync --group docs
+
+# Everything (app + dev + docs)
+uv sync --group dev --group docs
+```
+
 ### 4. Run application
 
 ```bash
@@ -195,6 +210,24 @@ uv run python main.py
 
 ```bash
 uv run python -m unittest discover -s tests
+```
+
+### ⚡ Fast CLI checks (copy/paste)
+
+Quick feedback loops for local development:
+
+```bash
+# Run a single test module (fast)
+uv run python -m unittest tests.test_validators
+
+# Run one feature test file
+uv run python -m unittest tests.test_birthdays_feature
+
+# Run a subset by filename pattern
+uv run python -m unittest discover -s tests -p "test_*feature.py"
+
+# Quiet output (less noise)
+uv run python -m unittest -q discover -s tests
 ```
 
 ### 6. Check test coverage
@@ -221,6 +254,18 @@ htmlcov/index.html
 ```bash
 uv sync --group docs
 LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 uv run --group docs sphinx-build -b html docs/source docs/build/html
+```
+
+Or (faster to type) from repo root:
+
+```bash
+make -C docs html
+```
+
+To clean the docs build:
+
+```bash
+make -C docs clean
 ```
 
 After the build finishes, open:
@@ -263,6 +308,7 @@ Then create a Pull Request into `main`.
 | Command        | Description |
 | -------------- | ----------- |
 | `hello`        | Greeting    |
+| `help`         | Show help   |
 | `exit`/`close` | Exit app    |
 
 ### Contacts
@@ -285,6 +331,18 @@ Then create a Pull Request into `main`.
 | `add-birthday`  | `add-birthday "Vasilij Olexandrovich Melnik" 06.09.1996` |
 | `show-birthday` | `show-birthday "Vasilij Olexandrovich Melnik"`           |
 | `birthdays`     | `birthdays` or `birthdays 14`  |
+
+### Notes
+
+Notes are stored per contact.
+
+| Command        | Example |
+| ------------- | ------- |
+| `add-note`    | `add-note "Mary Jane" buy milk` |
+| `remove-note` | `remove-note "Mary Jane" buy milk` |
+| `edit-note`   | `edit-note "Mary Jane" buy milk buy oat milk` |
+| `find-note`   | `find-note "Mary Jane" milk` |
+| `all-notes`   | `all-notes "Mary Jane"` |
 
 ### Edit contact (`edit-contact`)
 
