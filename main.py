@@ -21,6 +21,7 @@ from handlers import (
     find_note,
     all_notes,
 )
+from greeting import print_goodbye_banner, print_welcome_banner
 from storage import StorageError, StorageSaveError, load_data, save_data
 
 
@@ -52,14 +53,14 @@ def main():
         "all-notes": lambda args: all_notes(args, book),
     }
 
-    rprint("[cyan]Welcome to the assistant bot![/cyan]")
+    print_welcome_banner()
 
     try:
         while True:
             try:
                 user_input = input("Enter a command: ")
             except (EOFError, KeyboardInterrupt):
-                rprint("[cyan]Good bye![/cyan]")
+                print_goodbye_banner()
                 break
 
             command, *args = parse_input(user_input)
@@ -72,7 +73,7 @@ def main():
                 continue
 
             if command in ["close", "exit"]:
-                rprint("[cyan]Good bye![/cyan]")
+                print_goodbye_banner()
                 break
 
             handler = commands.get(command)
