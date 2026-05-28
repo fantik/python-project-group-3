@@ -10,6 +10,7 @@ from handlers import (
     birthdays,
     edit_contact,
     parse_input,
+    show_help,
     show_all,
     show_contact,
     show_birthday,
@@ -29,6 +30,7 @@ def main():
 
     commands = {
         "hello": lambda args: "How can I help you?",
+        "help": lambda args: show_help(),
         "add": lambda args: add_contact(args, book),
         "phone": lambda args: show_phone(args, book),
         "all": lambda args: show_all(book),
