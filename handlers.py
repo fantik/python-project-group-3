@@ -2,6 +2,7 @@
 
 from functools import wraps
 import shlex
+import re
 
 from rich.console import Console
 from rich.panel import Panel
@@ -25,6 +26,8 @@ def show_help():
     """Print a help panel with available commands."""
     contacts_lines = [
         "[bold]add[/bold] <name> <phone>",
+        "[bold]search[/bold] <query>  (search in all fields)",
+        "[bold]search[/bold] <name|-> <phone|-> <email|-> <address|->  (advanced filter)",
         "[bold]phone[/bold] <name>",
         "[bold]all[/bold]",
         "[bold]show-contact[/bold] <name>",
@@ -205,6 +208,172 @@ def show_all(book):
             table.add_row(*([""] * 7))
 
     console.print(table)
+
+
+def _build_contacts_table(title="Contacts"):
+    """Create a Rich Table for displaying contacts in a consistent format."""
+    table = Table(title=title)
+    table.add_column("Name", style="cyan")
+    table.add_column("Phones", style="green")
+    table.add_column("Email", style="blue")
+    table.add_column("Address", style="magenta")
+    table.add_column("Birthday", style="yellow")
+    table.add_column("Days to birthday", style="bright_yellow")
+    table.add_column("Notes", style="bright_blue", overflow="fold")
+    return table
+
+
+def _normalize_search_token(value):
+    """Treat '-' and empty tokens as missing criteria."""
+    if value is None:
+        return None
+    cleaned = str(value).strip()
+    if not cleaned or cleaned == "-":
+        return None
+    return cleaned
+
+
+def _text_matches(candidate, query, *, partial):
+    if query is None:
+        return True
+    candidate = candidate or ""
+    if partial:
+        return query.lower() in candidate.lower()
+    return candidate == query
+
+
+def _phone_partial_query(query):
+    """Return a best-effort normalized phone query for partial matching."""
+    if query is None:
+        return None
+
+    # If it's a full valid phone, reuse the normal validator for consistency.
+    try:
+        return validate_phone(query)
+    except ValueError:
+        pass
+
+    digits = re.sub(r"\D", "", query)
+    if not digits:
+        return None
+    if digits.startswith("380") and len(digits) >= 12:
+        return f"0{digits[3:12]}"
+    return digits
+
+
+def _phone_matches(record, query, *, partial):
+    if query is None:
+        return True
+    record_phones = [phone.value for phone in getattr(record, "phones", [])]
+    if not record_phones:
+        return False
+
+    if partial:
+        part = _phone_partial_query(query)
+        if part is None:
+            return False
+        return any(part in phone for phone in record_phones)
+
+    normalized = validate_phone(query)
+    return any(phone == normalized for phone in record_phones)
+
+
+def _note_matches(record, query, *, partial):
+    """Return True when any note matches the query."""
+    if query is None:
+        return True
+    notes = getattr(record, "notes", []) or []
+    if not notes:
+        return False
+    if partial:
+        part = query.lower()
+        return any(part in (note.value or "").lower() for note in notes)
+    return any((note.value or "") == query for note in notes)
+
+
+def _render_contacts(records, *, title="Contacts"):
+    """Render contacts to Rich Table using the standard columns."""
+    table = _build_contacts_table(title)
+    for index, record in enumerate(records):
+        details = get_contact_details(record)
+        table.add_row(
+            details["name"],
+            details["phones"],
+            details["email"],
+            details["address"],
+            details["birthday"],
+            details["days_to_birthday"],
+            details["notes"],
+        )
+        if index < len(records) - 1:
+            table.add_row(*([""] * 7))
+    console.print(table)
+
+
+@input_error
+def search_contacts(args, book):
+    """Search contacts by partial (contains) match.
+
+    Modes:
+    - search <query>                          -> global OR across fields
+    - search <name|-> <phone|-> <email|-> <address|-> -> AND across provided fields
+    """
+    partial = True
+
+    if len(args) > 4:
+        raise ValueError(
+            "[red]Usage: search <name|-> <phone|-> <email|-> <address|->[/red]"
+        )
+
+    if len(args) == 1:
+        query = _normalize_search_token(args[0])
+        if query is not None:
+            matches = []
+            for record in book.data.values():
+                email_val = getattr(getattr(record, "email", None), "value", "")
+                address_val = getattr(getattr(record, "address", None), "value", "")
+                if (
+                    _text_matches(record.name.value, query, partial=partial)
+                    or _phone_matches(record, query, partial=partial)
+                    or _text_matches(email_val, query, partial=partial)
+                    or _text_matches(address_val, query, partial=partial)
+                    or _note_matches(record, query, partial=partial)
+                ):
+                    matches.append(record)
+
+            if not matches:
+                return "[yellow]Nothing found[/yellow]"
+
+            _render_contacts(matches, title="Contacts")
+            return None
+
+    padded = list(args) + ["-"] * (4 - len(args))
+    name_q, phone_q, email_q, address_q = (
+        _normalize_search_token(padded[0]),
+        _normalize_search_token(padded[1]),
+        _normalize_search_token(padded[2]),
+        _normalize_search_token(padded[3]),
+    )
+
+    matches = []
+    for record in book.data.values():
+        email_val = getattr(getattr(record, "email", None), "value", "")
+        address_val = getattr(getattr(record, "address", None), "value", "")
+        if not _text_matches(record.name.value, name_q, partial=partial):
+            continue
+        if not _phone_matches(record, phone_q, partial=partial):
+            continue
+        if not _text_matches(email_val, email_q, partial=partial):
+            continue
+        if not _text_matches(address_val, address_q, partial=partial):
+            continue
+        matches.append(record)
+
+    if not matches:
+        return "[yellow]Nothing found[/yellow]"
+
+    _render_contacts(matches, title="Contacts")
+    return None
 
 
 def format_notes_for_display(record):
