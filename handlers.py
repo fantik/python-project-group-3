@@ -20,6 +20,60 @@ from validators import (
 console = Console()
 PLACEHOLDER = "—"
 
+def show_help():
+    """Print a help panel with available commands."""
+    contacts_lines = [
+        "[bold]add[/bold] <name> <phone>",
+        "[bold]phone[/bold] <name>",
+        "[bold]all[/bold]",
+        "[bold]show-contact[/bold] <name>",
+        "[bold]add-email[/bold] <name> <email>",
+        "[bold]add-address[/bold] <name> <address>",
+        "[bold]edit-contact[/bold] <name> <field> <value...>",
+        "[bold]remove-contact[/bold] <name>",
+    ]
+
+    birthdays_lines = [
+        "[bold]add-birthday[/bold] <name> <DD.MM.YYYY>",
+        "[bold]show-birthday[/bold] <name>",
+        "[bold]birthdays[/bold] <days>",
+    ]
+
+    notes_lines = [
+        "[bold]add-note[/bold] <name> <note...>",
+        "[bold]edit-note[/bold] <name> <old_note> <new_note...>",
+        "[bold]remove-note[/bold] <name> <note...>",
+        "[bold]find-note[/bold] <name> <query...>",
+        "[bold]all-notes[/bold] <name>",
+    ]
+
+    general_lines = [
+        "[bold]hello[/bold]",
+        "[bold]help[/bold]",
+        "[bold]exit[/bold] / [bold]close[/bold]",
+    ]
+
+    body = "\n".join(
+        [
+            "[bold cyan]Contacts[/bold cyan] 🤝",
+            *[f"  - {line}" for line in contacts_lines],
+            "",
+            "[bold yellow]Birthdays[/bold yellow] 🎁",
+            *[f"  - {line}" for line in birthdays_lines],
+            "",
+            "[bold bright_blue]Notes[/bold bright_blue] 📝",
+            *[f"  - {line}" for line in notes_lines],
+            "",
+            "[bold green]General[/bold green] ⭐",
+            *[f"  - {line}" for line in general_lines],
+            "",
+            "[magenta]Tip: Use quotes for multi-word names or notes,[/magenta]",
+            "[bright_blue]e.g. add-note 'Lina Kostenko' 'buy tickets tomorrow'[/bright_blue]",
+        ]
+    )
+
+    console.print(Panel(body, title="Help", border_style="cyan", expand=False))
+
 
 def parse_input(user_input):
     """Split user input into command and arguments."""
