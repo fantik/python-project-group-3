@@ -58,7 +58,7 @@ The personal assistant must be able to:
 | Requirement                                          | Status |
 | ---------------------------------------------------- | ------ |
 | Add contacts (name, address, phone, email, birthday) | ✅     |
-| Search contacts by criteria (exact name)             | ✅     |
+| Search contacts by criteria (exact match, AND)       | ✅     |
 | Edit contacts                                        | ✅     |
 | Delete contacts                                      | ✅     |
 | Show upcoming birthdays (N days range)               | ✅     |
@@ -318,11 +318,72 @@ Then create a Pull Request into `main`.
 | `add`          | `add "Vasilij Olexandrovich Melnik" 0500000000`                   |
 | `add-address`  | `add-address "Vasilij Olexandrovich Melnik" Petržílkova 2583/15, 158 00 Praha 13-Stodůlky`    |
 | `add-email`    | `add-email "Vasilij Olexandrovich Melnik" vasilij.melnik@example.com`       |
+| `search`       | `search "mar" - - "street"`                    |
 | `edit-contact` | `edit-contact "Vasilij Olexandrovich Melnik" email vasilij.olexandrovich.melnik@gmail.com` |
 | `remove-contact` | `remove-contact "Vasilij Olexandrovich Melnik"` |
 | `phone`        | `phone "Vasilij Olexandrovich Melnik"`                            |
 | `show-contact` | `show-contact "Vasilij Olexandrovich Melnik"`                     |
 | `all`          | Show all contacts                       |
+
+### Search contacts (`search`)
+
+Find contacts by **partial match (contains)** in two ways:
+
+- **Partial match**: searches by “contains” (case-insensitive) for name/email/address, and by substring for phone.
+- **Global query (recommended)**: `search <query>` matches when **any field** contains the query (OR logic).
+- **Advanced filter**: positional arguments use **AND logic** (a contact must match **all** provided criteria).
+
+#### Quick usage
+
+```text
+search <query>
+search <name|-> <phone|-> <email|-> <address|->
+```
+
+#### Arguments (positional)
+
+| Position | Meaning   | How to skip | Notes |
+| -------- | --------- | ----------- | ----- |
+| 1        | name      | `-`         | Use quotes for multi-word names |
+| 2        | phone     | `-`         | Substring match (e.g. `1234`) |
+| 3        | email     | `-`         | Substring match (e.g. `@gmail`) |
+| 4        | address   | `-`         | Use quotes for multi-word addresses |
+
+#### Examples
+
+```text
+# Global query (search in name/phones/email/address/notes)
+search @gmail.com
+search 123
+
+# Search by name only
+search "Mary Jane" - - -
+
+# Search by phone only (skip name/email/address)
+search - 0671234567 - -
+
+# Phone in international format (still works)
+search - +380731234567 - -
+
+# Search by email only
+search - - mary.jane@example.com -
+
+# Search by address only (quote multi-word address)
+search - - - "Petržílkova 2583/15, 158 00 Praha 13-Stodůlky"
+
+# AND search (name AND email)
+search "Mary Jane" - mary.jane@example.com -
+
+# AND search across all fields
+search "Mary Jane" 0671234567 mary.jane@example.com "Main Street 10, Kyiv"
+
+# More flexible partial search (case-insensitive)
+search "mar" - - "street"
+
+# Phone substring search
+search - 1234 - -
+
+```
 
 ### Birthdays
 
@@ -339,6 +400,7 @@ Notes are stored per contact.
 | Command        | Example |
 | ------------- | ------- |
 | `add-note`    | `add-note "Mary Jane" buy milk` |
+| `add-note`    | `add-note John "Lorem Ipsum has been the industry's standard dummy text"` |
 | `remove-note` | `remove-note "Mary Jane" buy milk` |
 | `edit-note`   | `edit-note "Mary Jane" buy milk buy oat milk` |
 | `find-note`   | `find-note "Mary Jane" milk` |
@@ -395,6 +457,10 @@ Enter a command: add-birthday "Vasilij Olexandrovich Melnik" 06.09.1996
 Birthday added.
 
 Enter a command: show-contact "Vasilij Olexandrovich Melnik"
+
+Enter a command: search "Vasilij Olexandrovich Melnik" - - -
+
+Enter a command: search - 0500000000 - -
 
 Enter a command: edit-contact "Vasilij Olexandrovich Melnik" email vasilij.olexandrovich.melnik@gmail.com
 Email updated.
