@@ -15,6 +15,11 @@ from handlers import (
     show_birthday,
     show_phone,
     remove_contact,
+    add_note,
+    remove_note,
+    edit_note,
+    find_note,
+    all_notes,
 )
 from storage import StorageError, StorageSaveError, load_data, save_data
 
@@ -40,6 +45,11 @@ def main():
         "show-birthday": lambda args: show_birthday(args, book),
         "birthdays": lambda args: birthdays(args, book),
         "remove-contact": lambda args: remove_contact(args, book),
+        "add-note": lambda args: add_note(args, book),
+        "remove-note": lambda args: remove_note(args, book),
+        "edit-note": lambda args: edit_note(args, book),
+        "find-note": lambda args: find_note(args, book),
+        "all-notes": lambda args: all_notes(args, book),
     }
 
     rprint("[cyan]Welcome to the assistant bot![/cyan]")

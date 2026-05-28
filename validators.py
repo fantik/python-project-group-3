@@ -84,3 +84,19 @@ def validate_birthday(date):
         raise ValueError("[red]Birthday cannot be in the future[/red]")
 
     return parsed_date
+
+def validate_note(note):
+    """Return a trimmed note or raise when it is too short."""
+    cleaned_note = note.strip() if note is not None else ""
+
+    if len(cleaned_note) < 3:
+        raise ValueError(
+            "[red]Note must be at least 3 characters[/red]"
+        )
+
+    if len(cleaned_note) > 100:
+        raise ValueError(
+            "[red]Note must be less than 100 characters[/red]"
+        )
+
+    return cleaned_note

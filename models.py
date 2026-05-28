@@ -9,6 +9,7 @@ from validators import (
     validate_email,
     validate_name,
     validate_phone,
+    validate_note,
 )
 
 
@@ -56,9 +57,17 @@ class Email(Field):
     def __init__(self, value):
         super().__init__(validate_email(value))
 
+class Note(Field):
+    """Note field validated via the shared validator."""
+
+    def __init__(self, value):
+        super().__init__(validate_note(value))
+
 
 class Record:
-    """A single contact with name, phones, and optional metadata."""
+    """A single contact with name, phones, notes and optional metadata."""
+
+    MAX_NOTES = 5
 
     def __init__(self, name):
         self.name = Name(name)
@@ -66,6 +75,7 @@ class Record:
         self.birthday = None
         self.address = None
         self.email = None
+        self.notes = []
 
     def __setstate__(self, state):
         """Restore older pickled records that do not have new fields yet."""
@@ -74,6 +84,8 @@ class Record:
             self.address = None
         if "email" not in state:
             self.email = None
+        if "notes" not in state:
+            self.notes = []
 
     def add_phone(self, phone):
         """Append a validated phone number to this contact."""
@@ -137,6 +149,51 @@ class Record:
             raise ValueError("[red]Email not set[/red]")
         self.email = Email(email)
 
+    def add_note(self, note):
+        """Append a validated note to this contact."""
+        if len(self.notes) >= self.MAX_NOTES:
+            raise ValueError(
+                f"[red]A contact can have at most {self.MAX_NOTES} notes[/red]"
+            )
+        self.notes.append(Note(note))
+
+    def remove_note(self, note):
+        """Remove a note by its value."""
+        normalized_note = validate_note(note)
+        for item in self.notes:
+            if item.value == normalized_note:
+                self.notes.remove(item)
+                return
+        raise ValueError("[red]Note not found[/red]")
+
+    def edit_note(self, old_note, new_note):
+        """Replace an existing note with a new one."""
+        normalized_old_note = validate_note(old_note)
+        for i in range(len(self.notes)):
+            if self.notes[i].value == normalized_old_note:
+                self.notes[i] = Note(new_note)
+                return
+        raise ValueError("[red]Old note not found[/red]")
+
+    def find_note(self, note):
+        """Return note value if found, else raise ValueError."""
+        normalized_note = validate_note(note)
+        for item in self.notes:
+            if item.value == normalized_note:
+                return item.value
+        raise ValueError("[red]The note was not found in the list[/red]")
+
+    def find_notes_by_query(self, query):
+        """Return note texts that contain the query (case-insensitive)."""
+        part = (query or "").strip().lower()
+        if not part:
+            return []
+        return [
+            item.value
+            for item in self.notes
+            if part in item.value.lower()
+        ]
+
     def __str__(self):
         phones = "; ".join(p.value for p in self.phones)
         birthday = (
@@ -148,9 +205,11 @@ class Record:
         address = address_field.value if address_field else "None"
         email_field = getattr(self, "email", None)
         email = email_field.value if email_field else "None"
+        notes = "; ".join(n.value for n in self.notes) or "None"
         return (
             f"Contact name: {self.name.value}, phones: {phones}, "
-            f"birthday: {birthday}, address: {address}, email: {email}"
+            f"birthday: {birthday}, address: {address}, email: {email}, "
+            f"notes: {notes}"
         )
 
     def days_to_birthday(self, today=None):

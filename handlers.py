@@ -19,6 +19,7 @@ from validators import (
 
 console = Console()
 PLACEHOLDER = "—"
+NOTE_BULLET = "*"
 
 
 def parse_input(user_input):
@@ -27,7 +28,7 @@ def parse_input(user_input):
         lexer = shlex.shlex(user_input, posix=True)
         lexer.whitespace_split = True
         lexer.commenters = ""
-        lexer.quotes = '"'
+        lexer.quotes = "\"'"
         parts = list(lexer)
     except ValueError as exc:
         return "__parse_error__", str(exc)
@@ -131,8 +132,10 @@ def show_all(book):
     table.add_column("Address", style="magenta")
     table.add_column("Birthday", style="yellow")
     table.add_column("Days to birthday", style="bright_yellow")
+    table.add_column("Notes", style="bright_blue", overflow="fold")
 
-    for record in book.data.values():
+    records = list(book.data.values())
+    for index, record in enumerate(records):
         details = get_contact_details(record)
 
         table.add_row(
@@ -142,9 +145,19 @@ def show_all(book):
             details["address"],
             details["birthday"],
             details["days_to_birthday"],
+            details["notes"],
         )
+        if index < len(records) - 1:
+            table.add_row(*([""] * 7))
 
     console.print(table)
+
+
+def format_notes_for_display(record):
+    """Return notes as a bulleted multiline string for Rich output."""
+    if not record.notes:
+        return PLACEHOLDER
+    return "\n".join(f"{NOTE_BULLET} {note.value}" for note in record.notes)
 
 
 def get_contact_details(record):
@@ -153,7 +166,7 @@ def get_contact_details(record):
     email_field = getattr(record, "email", None)
     address_field = getattr(record, "address", None)
     days_to_birthday = record.days_to_birthday()
-
+    notes = format_notes_for_display(record)
     return {
         "name": record.name.value,
         "phones": phones,
@@ -171,6 +184,7 @@ def get_contact_details(record):
             if days_to_birthday is not None
             else PLACEHOLDER
         ),
+        "notes": notes,
     }
 
 
@@ -195,6 +209,10 @@ def show_contact(args, book):
             (
                 "[bold bright_yellow]Days to birthday:"
                 f"[/bold bright_yellow] {details['days_to_birthday']}"
+            ),
+            (
+                "[bold bright_blue]Notes:[/bold bright_blue]\n"
+                f"{details['notes']}"
             ),
         ]
     )
@@ -271,6 +289,145 @@ def show_birthday(args, book):
     )
 
 
+def resolve_contact_for_note_args(args, book, *, name_only=False):
+    """Split note-command tokens into contact name, record, and note text tail.
+
+    Unlike single-value fields (email, phone), note text can contain spaces.
+    We find existing contact-name prefix matches; the rest is note-related
+    tokens (one note, or old/new pair for edit-note).
+
+    When ``name_only`` is True (``all-notes``), every token must belong to the
+    contact name and the longest matching name is used.
+    """
+    matches = []
+    for index in range(1, len(args) + 1):
+        if name_only and index != len(args):
+            continue
+
+        name = join_name_parts(args[:index])
+        record = book.find(name)
+        if record is not None:
+            matches.append((name, record, args[index:]))
+
+    if not matches:
+        return None, None, []
+
+    if name_only:
+        return matches[-1]
+
+    if len(matches) > 1:
+        raise ValueError(
+            "[red]Ambiguous contact name. Please use a unique name.[/red]"
+        )
+
+    return matches[0]
+
+@input_error
+def add_note(args, book):
+    """Add a note to a contact."""
+    require_min_args(args, 2, "add-note [name] [note]")
+    _name, record, remaining = resolve_contact_for_note_args(args, book)
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    note = " ".join(remaining).strip()
+    if not note:
+        raise ValueError("[red]Usage: add-note [name] [note][/red]")
+
+    record.add_note(note)
+    return "[green]Note added.[/green]"
+
+
+@input_error
+def remove_note(args, book):
+    """Remove a note from a contact."""
+    require_min_args(args, 2, "remove-note [name] [note]")
+    _name, record, remaining = resolve_contact_for_note_args(args, book)
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    note = " ".join(remaining).strip()
+    if not note:
+        raise ValueError("[red]Usage: remove-note [name] [note][/red]")
+
+    record.remove_note(note)
+    return "[green]Note removed.[/green]"
+
+
+@input_error
+def edit_note(args, book):
+    """Edit a note in a contact."""
+    require_min_args(args, 3, "edit-note [name] [old_note] [new_note]")
+    _name, record, remaining = resolve_contact_for_note_args(args, book)
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    if len(remaining) < 2:
+        raise ValueError(
+            "[red]Usage: edit-note [name] [old_note] [new_note][/red]"
+        )
+
+    # First token (or quoted chunk) = old note, the rest = new note.
+    # Example: edit-note "Lina Kostenko" "wants coffee" "wants coffee now"
+    old_note = remaining[0]
+    new_note = " ".join(remaining[1:]).strip()
+    if not new_note:
+        raise ValueError(
+            "[red]Usage: edit-note [name] [old_note] [new_note][/red]"
+        )
+
+    record.edit_note(old_note, new_note)
+    return "[green]Note edited.[/green]"
+
+
+@input_error
+def find_note(args, book):
+    """Find contact notes whose text contains the query (case-insensitive)."""
+    require_min_args(args, 2, "find-note [name] [query]")
+    name, record, remaining = resolve_contact_for_note_args(args, book)
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    query = " ".join(remaining).strip()
+    if not query:
+        raise ValueError("[red]Usage: find-note [name] [query][/red]")
+
+    matches = record.find_notes_by_query(query)
+    if not matches:
+        return (
+            f"[yellow]No notes matching '{query}' "
+            f"for contact '{name}'.[/yellow]"
+        )
+
+    table = Table(title=f"Notes matching '{query}' — {name}")
+    table.add_column("Note", style="bright_blue", overflow="fold")
+    for note_text in matches:
+        table.add_row(f"{NOTE_BULLET} {note_text}")
+    console.print(table)
+
+@input_error
+def all_notes(args, book):
+    """Show all notes for a contact."""
+    require_min_args(args, 1, "all-notes [name]")
+    name, record, remaining = resolve_contact_for_note_args(
+        args, book, name_only=True
+    )
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    if remaining:
+        raise ValueError("[red]Usage: all-notes [name][/red]")
+
+    if not record.notes:
+        return f"[yellow]No notes for contact '{name}'.[/yellow]"
+
+    table = Table(title=f"All notes for {name}")
+    table.add_column("Note", style="bright_blue", overflow="fold")
+    for note in record.notes:
+        table.add_row(f"{NOTE_BULLET} {note.value}")
+    console.print(table)
+
+
 _EDIT_CONTACT_FIELDS = frozenset(
     {"name", "email", "address", "phone", "birthday"}
 )
@@ -305,6 +462,7 @@ def _has_plausible_later_edit_parse(args, start_index=2):
                 validate_phone(value_tokens[0])
                 validate_phone(value_tokens[1])
                 return True
+
         except ValueError:
             continue
 
@@ -481,3 +639,4 @@ def remove_contact(args, book):
         return f"[green]Contact '{name}' has been deleted successfully.[/green]"
 
     return "[yellow]Deletion cancelled.[/yellow]"
+

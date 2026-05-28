@@ -76,6 +76,7 @@ class ShowContactTests(unittest.TestCase):
                     "[bold magenta]Address:[/bold magenta] Main Street 10",
                     "[bold yellow]Birthday:[/bold yellow] 30.05.2000",
                     "[bold bright_yellow]Days to birthday:[/bold bright_yellow] 3",
+                    "[bold bright_blue]Notes:[/bold bright_blue]\n—",
                 ]
             ),
         )
@@ -102,6 +103,7 @@ class ShowContactTests(unittest.TestCase):
             "[bold bright_yellow]Days to birthday:[/bold bright_yellow] —",
             panel.renderable,
         )
+        self.assertIn("[bold bright_blue]Notes:[/bold bright_blue]\n—", panel.renderable)
 
     def test_show_contact_requires_name_argument(self):
         book = AddressBook()
