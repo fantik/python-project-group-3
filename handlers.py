@@ -22,6 +22,40 @@ console = Console()
 PLACEHOLDER = "—"
 NOTE_BULLET = "*"
 
+
+def input_error(func):
+    """Decorator that returns exception messages instead of raising."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ContactNotFoundError as exc:
+            return str(exc)
+        except (ValueError, KeyError, IndexError) as exc:
+            # These should generally be raised with user-friendly messages
+            # by handlers/validators. If not, fall back to a helpful hint.
+            message = str(exc).strip()
+            if message:
+                return message
+            return "[red]Invalid input. Type 'help' to see usage.[/red]"
+        except TypeError:
+            # Most often indicates wrong handler arity or incorrect internal call.
+            return (
+                "[red]Invalid input for this command. "
+                "Type 'help' to see usage.[/red]"
+            )
+        except Exception:
+            # Catch-all: avoid exposing internal tracebacks to the user.
+            return (
+                "[red]Something went wrong while processing the command. "
+                "Type 'help' to see available commands.[/red]"
+            )
+
+    return wrapper
+
+
+@input_error
 def show_help():
     """Print a help panel with available commands."""
     contacts_lines = [
@@ -96,20 +130,6 @@ def parse_input(user_input):
     cmd, *args = parts
     cmd = cmd.strip().lower()
     return cmd, *args
-
-
-def input_error(func):
-    """Decorator that returns exception messages instead of raising."""
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            return str(e)
-
-    return wrapper
-
 
 def require_min_args(args, count, usage):
     """Validate minimum CLI arity for handlers with free-form trailing text."""
