@@ -22,6 +22,10 @@ from handlers import (
     edit_note,
     find_note,
     all_notes,
+    add_tag,
+    remove_tag,
+    find_notes_by_tag,
+    sort_notes_by_tag,
 )
 from greeting import print_goodbye_banner, print_welcome_banner
 from storage import StorageError, StorageSaveError, load_data, save_data
@@ -55,6 +59,10 @@ def main():
         "edit-note": lambda args: edit_note(args, book),
         "find-note": lambda args: find_note(args, book),
         "all-notes": lambda args: all_notes(args, book),
+        "add-tag": lambda args: add_tag(args, book),
+        "remove-tag": lambda args: remove_tag(args, book),
+        "find-notes-by-tag": lambda args: find_notes_by_tag(args, book),
+        "sort-notes-by-tag": lambda args: sort_notes_by_tag(args, book),
     }
 
     print_welcome_banner()
