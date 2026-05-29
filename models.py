@@ -10,6 +10,7 @@ from validators import (
     validate_name,
     validate_phone,
     validate_note,
+    validate_tag
 )
 
 
@@ -57,17 +58,35 @@ class Email(Field):
     def __init__(self, value):
         super().__init__(validate_email(value))
 
-class Note(Field):
-    """Note field validated via the shared validator."""
+class Tag(Field):
+    """Tag field validated via the shared validator."""
 
     def __init__(self, value):
-        super().__init__(validate_note(value))
+        super().__init__(validate_tag(value))
+
+class Note:
+    """Contact note with a per-contact numeric id, text, and optional tags."""
+
+    def __init__(self, note_id, text, tags=None):
+        self.id = int(note_id)
+        self.text = validate_note(text)
+        self.tags = [Tag(tag) for tag in (tags or [])]
+
+    @property
+    def value(self):
+        """Read-only alias for note text used in display helpers."""
+        return self.text
+
+    @value.setter
+    def value(self, new_text):
+        self.text = validate_note(new_text)
 
 
 class Record:
     """A single contact with name, phones, notes and optional metadata."""
 
     MAX_NOTES = 5
+    MAX_TAGS_PER_NOTE = 5
 
     def __init__(self, name):
         self.name = Name(name)
@@ -76,6 +95,7 @@ class Record:
         self.address = None
         self.email = None
         self.notes = []
+        self._next_note_id = 1
 
     def __setstate__(self, state):
         """Restore older pickled records that do not have new fields yet."""
@@ -86,6 +106,18 @@ class Record:
             self.email = None
         if "notes" not in state:
             self.notes = []
+        if "_next_note_id" not in state:
+            self._next_note_id = max((note.id for note in self.notes), default=0) + 1
+        for note in self.notes:
+            if not getattr(note, "tags", None):
+                note.tags = []
+
+    def _get_note_by_id(self, note_id):
+        """Return a note by id or raise ValueError."""
+        for item in self.notes:
+            if item.id == int(note_id):
+                return item
+        raise ValueError(f"[red]Note with id {note_id} not found[/red]")
 
     def add_phone(self, phone):
         """Append a validated phone number to this contact."""
@@ -150,49 +182,89 @@ class Record:
         self.email = Email(email)
 
     def add_note(self, note):
-        """Append a validated note to this contact."""
+        """Append a validated note to this contact and return its id."""
         if len(self.notes) >= self.MAX_NOTES:
             raise ValueError(
                 f"[red]A contact can have at most {self.MAX_NOTES} notes[/red]"
             )
-        self.notes.append(Note(note))
+        note_id = self._next_note_id
+        self._next_note_id += 1
+        self.notes.append(Note(note_id, note, tags=[]))
+        return note_id
 
-    def remove_note(self, note):
-        """Remove a note by its value."""
-        normalized_note = validate_note(note)
-        for item in self.notes:
-            if item.value == normalized_note:
-                self.notes.remove(item)
-                return
-        raise ValueError("[red]Note not found[/red]")
+    def remove_note(self, note_id):
+        """Remove a note by its id."""
+        self.notes.remove(self._get_note_by_id(note_id))
 
-    def edit_note(self, old_note, new_note):
-        """Replace an existing note with a new one."""
-        normalized_old_note = validate_note(old_note)
-        for i in range(len(self.notes)):
-            if self.notes[i].value == normalized_old_note:
-                self.notes[i] = Note(new_note)
-                return
-        raise ValueError("[red]Old note not found[/red]")
-
-    def find_note(self, note):
-        """Return note value if found, else raise ValueError."""
-        normalized_note = validate_note(note)
-        for item in self.notes:
-            if item.value == normalized_note:
-                return item.value
-        raise ValueError("[red]The note was not found in the list[/red]")
+    def edit_note(self, note_id, new_note):
+        """Replace a note's text by id."""
+        self._get_note_by_id(note_id).value = new_note
 
     def find_notes_by_query(self, query):
-        """Return note texts that contain the query (case-insensitive)."""
+        """Return notes whose text contains the query (case-insensitive)."""
         part = (query or "").strip().lower()
         if not part:
             return []
         return [
-            item.value
+            item
             for item in self.notes
             if part in item.value.lower()
         ]
+
+    def add_tags(self, note_id, *tags):
+        """Add one or more tags to a note identified by id."""
+        note = self._get_note_by_id(note_id)
+        for tag in tags:
+            normalized_tag = validate_tag(tag)
+            if any(item.value == normalized_tag for item in note.tags):
+                raise ValueError(
+                    f"[red]Tag '{normalized_tag}' already on note {note_id}[/red]"
+                )
+            if len(note.tags) >= self.MAX_TAGS_PER_NOTE:
+                raise ValueError(
+                    f"[red]A note can have at most "
+                    f"{self.MAX_TAGS_PER_NOTE} tags[/red]"
+                )
+            note.tags.append(Tag(normalized_tag))
+
+    def remove_tag(self, note_id, tag):
+        """Remove a tag from a note identified by id."""
+        note = self._get_note_by_id(note_id)
+        normalized_tag = validate_tag(tag)
+        for item in note.tags:
+            if item.value == normalized_tag:
+                note.tags.remove(item)
+                return
+        raise ValueError("[red]Tag not found[/red]")
+
+    def find_notes_by_tag(self, tag, *, partial=True):
+        """Return notes that contain a tag (partial match by default)."""
+        query = (tag or "").strip().lstrip("#").lower()
+        if not query:
+            return []
+
+        if partial:
+            return [
+                note
+                for note in self.notes
+                if any(query in item.value for item in note.tags)
+            ]
+
+        normalized_tag = validate_tag(tag)
+        return [
+            note
+            for note in self.notes
+            if any(item.value == normalized_tag for item in note.tags)
+        ]
+
+    def sort_notes_by_tags(self):
+        """Return notes sorted by first tag, then untagged notes by id."""
+        def sort_key(note):
+            if note.tags:
+                return (0, note.tags[0].value, note.id)
+            return (1, "", note.id)
+
+        return sorted(self.notes, key=sort_key)
 
     def __str__(self):
         phones = "; ".join(p.value for p in self.phones)
