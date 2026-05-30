@@ -16,6 +16,7 @@ from validators import (
     validate_email,
     validate_name,
     validate_phone,
+    validate_tag,
 )
 
 console = Console()
@@ -79,10 +80,14 @@ def show_help():
 
     notes_lines = [
         "[bold]add-note[/bold] <name> <note...>",
-        "[bold]edit-note[/bold] <name> <old_note> <new_note...>",
-        "[bold]remove-note[/bold] <name> <note...>",
+        "[bold]edit-note[/bold] <name> <id> <new_note...>",
+        "[bold]remove-note[/bold] <name> <id>",
         "[bold]find-note[/bold] <name> <query...>",
         "[bold]all-notes[/bold] <name>",
+        "[bold]add-tag[/bold] <name> <id> #tag [#tag...]",
+        "[bold]remove-tag[/bold] <name> <id> #tag",
+        "[bold]find-notes-by-tag[/bold] <name> #tag",
+        "[bold]sort-notes-by-tag[/bold] <name>",
     ]
 
     general_lines = [
@@ -107,6 +112,7 @@ def show_help():
             "",
             "[magenta]Tip: Use quotes for multi-word names or notes,[/magenta]",
             "[bright_blue]e.g. add-note 'Lina Kostenko' 'buy tickets tomorrow'[/bright_blue]",
+            "[bright_yellow]e.g. add-tag Olga 1 #shopping #urgent[/bright_yellow]",
         ]
     )
 
@@ -299,7 +305,7 @@ def _phone_matches(record, query, *, partial):
 
 
 def _note_matches(record, query, *, partial):
-    """Return True when any note matches the query."""
+    """Return True when any note text or tag matches the query."""
     if query is None:
         return True
     notes = getattr(record, "notes", []) or []
@@ -307,7 +313,11 @@ def _note_matches(record, query, *, partial):
         return False
     if partial:
         part = query.lower()
-        return any(part in (note.value or "").lower() for note in notes)
+        return any(
+            part in (note.value or "").lower()
+            or any(part in tag.value for tag in getattr(note, "tags", []))
+            for note in notes
+        )
     return any((note.value or "") == query for note in notes)
 
 
@@ -400,7 +410,94 @@ def format_notes_for_display(record):
     """Return notes as a bulleted multiline string for Rich output."""
     if not record.notes:
         return PLACEHOLDER
-    return "\n".join(f"{NOTE_BULLET} {note.value}" for note in record.notes)
+    lines = []
+    for note in record.notes:
+        tags = _format_note_tags(note)
+        suffix = f" ({tags})" if tags != PLACEHOLDER else ""
+        lines.append(
+            f"{NOTE_BULLET} \\[note id: {note.id}] "
+            f"{note.value}{suffix}"
+        )
+    return "\n".join(lines)
+
+
+def _format_note_tags(note):
+    """Return note tags as a space-separated #tag string."""
+    if not note.tags:
+        return PLACEHOLDER
+    return " ".join(f"#{tag.value}" for tag in note.tags)
+
+
+def _parse_note_id(token):
+    """Return note id or raise when the token is not a positive integer."""
+    if token.isdigit() and int(token) > 0:
+        return int(token)
+    raise ValueError("[red]Note id must be a positive integer.[/red]")
+
+
+def _render_notes_table(notes, title):
+    """Print notes in a table with id, text, and tags columns."""
+    table = Table(title=title)
+    table.add_column("ID", style="cyan", justify="right")
+    table.add_column("Note", style="bright_blue", overflow="fold")
+    table.add_column("Tags", style="magenta", overflow="fold")
+    for note in notes:
+        table.add_row(
+            str(note.id),
+            f"{NOTE_BULLET} {note.value}",
+            _format_note_tags(note),
+        )
+    console.print(table)
+
+
+def _parse_tag_tokens(tokens):
+    """Parse CLI tokens that must start with # into validated tag names."""
+    if not tokens:
+        raise ValueError(
+            "[red]Usage: provide at least one tag starting with #, "
+            "e.g. #shopping[/red]"
+        )
+
+    parsed = []
+    for token in tokens:
+        if not token.startswith("#") or len(token) < 2:
+            raise ValueError(
+                "[red]Each tag must start with #, e.g. #shopping[/red]"
+            )
+        parsed.append(validate_tag(token))
+    return parsed
+
+
+def _parse_tag_query(token):
+    """Parse a single tag query token (# prefix optional for search)."""
+    cleaned = (token or "").strip()
+    if not cleaned:
+        raise ValueError(
+            "[red]Usage: find-notes-by-tag [name] #tag[/red]"
+        )
+    if not cleaned.startswith("#"):
+        cleaned = f"#{cleaned}"
+    if len(cleaned) < 2:
+        raise ValueError(
+            "[red]Tag query must start with #, e.g. #shopping[/red]"
+        )
+    return cleaned.lstrip("#")
+
+
+def resolve_contact_note_id_and_tail(args, book, *, min_tail=0):
+    """Resolve contact name, record, note id, and remaining CLI tokens."""
+    _name, record, remaining = resolve_contact_for_note_args(args, book)
+    if record is None:
+        return None, None, None, []
+
+    if len(remaining) < 1 + min_tail:
+        raise ValueError(
+            "[red]Usage: command requires contact name, note id, "
+            "and additional arguments[/red]"
+        )
+
+    note_id = _parse_note_id(remaining[0])
+    return _name, record, note_id, remaining[1:]
 
 
 def get_contact_details(record):
@@ -577,50 +674,43 @@ def add_note(args, book):
     if not note:
         raise ValueError("[red]Usage: add-note [name] [note][/red]")
 
-    record.add_note(note)
-    return "[green]Note added.[/green]"
+    note_id = record.add_note(note)
+    return f"[green]Note added with id {note_id}.[/green]"
 
 
 @input_error
 def remove_note(args, book):
-    """Remove a note from a contact."""
-    require_min_args(args, 2, "remove-note [name] [note]")
-    _name, record, remaining = resolve_contact_for_note_args(args, book)
+    """Remove a note from a contact by id."""
+    require_min_args(args, 2, "remove-note [name] <id>")
+    _name, record, note_id, tail = resolve_contact_note_id_and_tail(args, book)
     if record is None:
         return "[red]Contact not found[/red]"
 
-    note = " ".join(remaining).strip()
-    if not note:
-        raise ValueError("[red]Usage: remove-note [name] [note][/red]")
+    if tail:
+        raise ValueError("[red]Usage: remove-note [name] <id>[/red]")
 
-    record.remove_note(note)
-    return "[green]Note removed.[/green]"
+    record.remove_note(note_id)
+    return f"[green]Note {note_id} removed.[/green]"
 
 
 @input_error
 def edit_note(args, book):
-    """Edit a note in a contact."""
-    require_min_args(args, 3, "edit-note [name] [old_note] [new_note]")
-    _name, record, remaining = resolve_contact_for_note_args(args, book)
+    """Edit a note in a contact by id."""
+    require_min_args(args, 3, "edit-note [name] <id> <new_note...>")
+    _name, record, note_id, tail = resolve_contact_note_id_and_tail(
+        args, book, min_tail=1
+    )
     if record is None:
         return "[red]Contact not found[/red]"
 
-    if len(remaining) < 2:
-        raise ValueError(
-            "[red]Usage: edit-note [name] [old_note] [new_note][/red]"
-        )
-
-    # First token (or quoted chunk) = old note, the rest = new note.
-    # Example: edit-note "Lina Kostenko" "wants coffee" "wants coffee now"
-    old_note = remaining[0]
-    new_note = " ".join(remaining[1:]).strip()
+    new_note = " ".join(tail).strip()
     if not new_note:
         raise ValueError(
-            "[red]Usage: edit-note [name] [old_note] [new_note][/red]"
+            "[red]Usage: edit-note [name] <id> <new_note...>[/red]"
         )
 
-    record.edit_note(old_note, new_note)
-    return "[green]Note edited.[/green]"
+    record.edit_note(note_id, new_note)
+    return f"[green]Note {note_id} edited.[/green]"
 
 
 @input_error
@@ -642,11 +732,7 @@ def find_note(args, book):
             f"for contact '{name}'.[/yellow]"
         )
 
-    table = Table(title=f"Notes matching '{query}' — {name}")
-    table.add_column("Note", style="bright_blue", overflow="fold")
-    for note_text in matches:
-        table.add_row(f"{NOTE_BULLET} {note_text}")
-    console.print(table)
+    _render_notes_table(matches, title=f"Notes matching '{query}' — {name}")
 
 @input_error
 def all_notes(args, book):
@@ -664,11 +750,88 @@ def all_notes(args, book):
     if not record.notes:
         return f"[yellow]No notes for contact '{name}'.[/yellow]"
 
-    table = Table(title=f"All notes for {name}")
-    table.add_column("Note", style="bright_blue", overflow="fold")
-    for note in record.notes:
-        table.add_row(f"{NOTE_BULLET} {note.value}")
-    console.print(table)
+    _render_notes_table(record.notes, title=f"All notes for {name}")
+
+
+@input_error
+def add_tag(args, book):
+    """Add one or more tags to a contact note."""
+    require_min_args(args, 3, "add-tag [name] <id> #tag [#tag...]")
+    _name, record, note_id, tag_tokens = resolve_contact_note_id_and_tail(
+        args, book, min_tail=1
+    )
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    tags = _parse_tag_tokens(tag_tokens)
+    record.add_tags(note_id, *tags)
+    return f"[green]Tags added to note {note_id}.[/green]"
+
+
+@input_error
+def remove_tag(args, book):
+    """Remove a tag from a contact note."""
+    require_min_args(args, 3, "remove-tag [name] <id> #tag")
+    _name, record, note_id, tag_tokens = resolve_contact_note_id_and_tail(
+        args, book, min_tail=1
+    )
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    if len(tag_tokens) != 1:
+        raise ValueError("[red]Usage: remove-tag [name] <id> #tag[/red]")
+
+    tag = _parse_tag_tokens(tag_tokens)[0]
+    record.remove_tag(note_id, tag)
+    return f"[green]Tag #{tag} removed from note {note_id}.[/green]"
+
+
+@input_error
+def find_notes_by_tag(args, book):
+    """Find contact notes that contain a tag (partial match)."""
+    require_min_args(args, 2, "find-notes-by-tag [name] #tag")
+    name, record, remaining = resolve_contact_for_note_args(args, book)
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    if len(remaining) != 1:
+        raise ValueError("[red]Usage: find-notes-by-tag [name] #tag[/red]")
+
+    tag_query = _parse_tag_query(remaining[0])
+    matches = record.find_notes_by_tag(tag_query, partial=True)
+    if not matches:
+        return (
+            f"[yellow]No notes with tag matching '#{tag_query}' "
+            f"for contact '{name}'.[/yellow]"
+        )
+
+    _render_notes_table(
+        matches,
+        title=f"Notes with tag '#{tag_query}' — {name}",
+    )
+
+
+@input_error
+def sort_notes_by_tag(args, book):
+    """Show contact notes sorted by their first tag."""
+    require_min_args(args, 1, "sort-notes-by-tag [name]")
+    name, record, remaining = resolve_contact_for_note_args(
+        args, book, name_only=True
+    )
+    if record is None:
+        return "[red]Contact not found[/red]"
+
+    if remaining:
+        raise ValueError("[red]Usage: sort-notes-by-tag [name][/red]")
+
+    if not record.notes:
+        return f"[yellow]No notes for contact '{name}'.[/yellow]"
+
+    sorted_notes = record.sort_notes_by_tags()
+    _render_notes_table(
+        sorted_notes,
+        title=f"Notes sorted by tag — {name}",
+    )
 
 
 _EDIT_CONTACT_FIELDS = frozenset(

@@ -68,8 +68,8 @@ The personal assistant must be able to:
 
 | Requirement                | Status |
 | -------------------------- | ------ |
-| Add textual notes          | ❌     |
-| Search, edit, delete notes | ❌     |
+| Add textual notes          | ✅     |
+| Search, edit, delete notes | ✅     |
 
 ### 💾 Data Persistence
 
@@ -93,8 +93,8 @@ The project can be extended with additional functionality:
 
 | Requirement                   | Status |
 | ----------------------------- | ------ |
-| Add tags to notes             | ❌     |
-| Search and sort notes by tags | ❌     |
+| Add tags to notes             | ✅     |
+| Search and sort notes by tags | ✅     |
 
 ---
 
@@ -352,9 +352,9 @@ search <name|-> <phone|-> <email|-> <address|->
 #### Examples
 
 ```text
-# Global query (search in name/phones/email/address/notes)
+# Global query (search in name/phones/email/address/notes/tags)
 search @gmail.com
-search 123
+search shopping
 
 # Search by name only
 search "Mary Jane" - - -
@@ -393,18 +393,51 @@ search - 1234 - -
 | `show-birthday` | `show-birthday "Vasilij Olexandrovich Melnik"`           |
 | `birthdays`     | `birthdays` or `birthdays 14`  |
 
-### Notes
+### Notes and tags
 
-Notes are stored per contact.
+Notes belong to a contact. Each note gets a numeric **id** (1, 2, 3…) within that contact.
+Create a note first, then attach tags with `#` syntax.
 
-| Command        | Example |
-| ------------- | ------- |
-| `add-note`    | `add-note "Mary Jane" buy milk` |
-| `add-note`    | `add-note John "Lorem Ipsum has been the industry's standard dummy text"` |
-| `remove-note` | `remove-note "Mary Jane" buy milk` |
-| `edit-note`   | `edit-note "Mary Jane" buy milk buy oat milk` |
-| `find-note`   | `find-note "Mary Jane" milk` |
-| `all-notes`   | `all-notes "Mary Jane"` |
+**Limits**
+
+| Limit | Value |
+| ----- | ----- |
+| Notes per contact | 5 |
+| Tags per note | 5 |
+| Note text length | 3–100 characters |
+| Tag length | 3–20 characters (`a-z`, `0-9`, `_`, `-`) |
+
+**Workflow**
+
+```text
+add-note Olga buy coffee
+add-tag Olga 1 #shopping #urgent
+all-notes Olga
+edit-note Olga 1 buy oat milk
+remove-tag Olga 1 #urgent
+find-notes-by-tag Olga #shop
+sort-notes-by-tag Olga
+remove-note Olga 1
+```
+
+| Command               | Example |
+| --------------------- | ------- |
+| `add-note`            | `add-note "Mary Jane" buy milk` |
+| `edit-note`           | `edit-note Olga 1 buy oat milk` |
+| `remove-note`         | `remove-note Olga 1` |
+| `find-note`           | `find-note Olga milk` |
+| `all-notes`           | `all-notes Olga` |
+| `add-tag`             | `add-tag Olga 1 #shopping #urgent` |
+| `remove-tag`          | `remove-tag Olga 1 #shopping` |
+| `find-notes-by-tag`   | `find-notes-by-tag Olga #shop` |
+| `sort-notes-by-tag`   | `sort-notes-by-tag Olga` |
+
+- `edit-note` and `remove-note` work **by note id only** (not by note text).
+- Tags in CLI must start with `#` (`add-tag`, `remove-tag`).
+- `find-notes-by-tag` supports partial match (`#shop` matches `#shopping`).
+- `sort-notes-by-tag` shows tagged notes first (A→Z by first tag), then untagged notes.
+- `search <query>` also matches note text and tags.
+- `all-notes` / `find-note` tables show columns: **ID**, **Note**, **Tags**.
 
 ### Edit contact (`edit-contact`)
 

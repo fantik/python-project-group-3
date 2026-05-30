@@ -16,6 +16,8 @@ EMAIL_PATTERN = re.compile(
     r"@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$"
 )
 
+TAG_PATTERN = re.compile(r"^[a-z0-9_-]+$")
+
 
 def validate_name(name):
     """Return a trimmed name or raise when it has fewer than two letters."""
@@ -85,6 +87,7 @@ def validate_birthday(date):
 
     return parsed_date
 
+
 def validate_note(note):
     """Return a trimmed note or raise when it is too short."""
     cleaned_note = note.strip() if note is not None else ""
@@ -100,3 +103,25 @@ def validate_note(note):
         )
 
     return cleaned_note
+
+
+def validate_tag(tag):
+    """Return a normalized tag or raise when the value is invalid."""
+    cleaned_tag = tag.strip().lstrip("#").lower() if tag is not None else ""
+
+    if len(cleaned_tag) < 3:
+        raise ValueError(
+            "[red]Tag must be at least 3 characters[/red]"
+        )
+
+    if len(cleaned_tag) > 20:
+        raise ValueError(
+            "[red]Tag must be less than 20 characters[/red]"
+        )
+
+    if not TAG_PATTERN.fullmatch(cleaned_tag):
+        raise ValueError(
+            "[red]Tag may contain only letters, digits, _ and -[/red]"
+        )
+
+    return cleaned_tag
