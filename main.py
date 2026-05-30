@@ -1,6 +1,7 @@
 """Address book CLI entry point."""
 
 from rich import print as rprint
+from difflib import get_close_matches
 
 from handlers import (
     add_address,
@@ -81,6 +82,12 @@ def main():
                 rprint(f"[red]Invalid input: {args[0]}[/red]")
                 continue
 
+            if command == "unknown_command":
+                rprint(f"[red]Unknown command: {args[0]}.[/red]")
+                if args[1]:
+                    rprint(f" Did you mean [green]{args[1]}[/green]?")
+                continue
+
             if not command:
                 continue
 
@@ -96,7 +103,9 @@ def main():
                 if result is not None:
                     rprint(result)
             else:
-                rprint("[red]Invalid command.[/red]")
+                suggestion = get_close_matches(command, commands.keys(), n=1)
+                suggestion_text = f" Did you mean [green]{suggestion[0]}[/green]?" if suggestion else ""
+                rprint(f"[red]Unknown command: {command}.[/red]{suggestion_text}")
     finally:
         try:
             save_data(book)
