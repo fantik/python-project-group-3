@@ -3,6 +3,7 @@
 from functools import wraps
 import shlex
 import re
+import difflib
 
 from rich.console import Console
 from rich.panel import Panel
@@ -22,6 +23,54 @@ from validators import (
 console = Console()
 PLACEHOLDER = "—"
 NOTE_BULLET = "*"
+
+KNOWN_COMMANDS = frozenset(
+    [
+        "add",
+        "search",
+        "phone",
+        "all",
+        "show-contact",
+        "add-email",
+        "add-address",
+        "edit-contact",
+        "remove-contact",
+        "add-birthday",
+        "show-birthday",
+        "birthdays",
+        "add-note",
+        "edit-note",
+        "remove-note",
+        "find-note",
+        "all-notes",
+        "add-tag",
+        "remove-tag",
+        "find-notes-by-tag",
+        "sort-notes-by-tag",
+        "hello",
+        "help",
+        "exit",
+        "close",
+    ]
+)
+
+
+def suggest_command(command, *, commands=None):
+    """Return the closest matching command from known commands."""
+    choices = commands or KNOWN_COMMANDS
+    matches = difflib.get_close_matches(command, choices, n=1, cutoff=0.6)
+    return matches[0] if matches else None
+
+
+def format_unknown_command(command):
+    """Format an unknown command message with a suggested close match."""
+    suggestion = suggest_command(command)
+    if suggestion:
+        return (
+            f"[red]Unknown command '{command}'. "
+            f"Did you mean '{suggestion}'?[/red]"
+        )
+    return f"[red]Unknown command '{command}'. Type 'help' to see usage.[/red]"
 
 
 def input_error(func):
@@ -135,6 +184,9 @@ def parse_input(user_input):
 
     cmd, *args = parts
     cmd = cmd.strip().lower()
+    if cmd and cmd not in KNOWN_COMMANDS:
+        suggestion = suggest_command(cmd)
+        return "unknown_command", cmd, suggestion
     return cmd, *args
 
 def require_min_args(args, count, usage):
