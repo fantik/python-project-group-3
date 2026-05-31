@@ -67,10 +67,10 @@ def format_unknown_command(command):
     suggestion = suggest_command(command)
     if suggestion:
         return (
-            f"[red]Unknown command '{command}'. "
-            f"Did you mean '{suggestion}'?[/red]"
+            f"[red]Unknown command: {command}.[/red] "
+            f"Did you mean [green]{suggestion}[/green]?"
         )
-    return f"[red]Unknown command '{command}'. Type 'help' to see usage.[/red]"
+    return f"[red]Unknown command: {command}. Type 'help' to see usage.[/red]"
 
 
 def input_error(func):
@@ -185,8 +185,7 @@ def parse_input(user_input):
     cmd, *args = parts
     cmd = cmd.strip().lower()
     if cmd and cmd not in KNOWN_COMMANDS:
-        suggestion = suggest_command(cmd)
-        return "unknown_command", cmd, suggestion
+        return "unknown_command", cmd
     return cmd, *args
 
 def require_min_args(args, count, usage):
