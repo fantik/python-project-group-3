@@ -9,6 +9,7 @@ from handlers import (
     add_email,
     birthdays,
     edit_contact,
+    format_unknown_command,
     search_contacts,
     parse_input,
     show_help,
@@ -81,6 +82,10 @@ def main():
                 rprint(f"[red]Invalid input: {args[0]}[/red]")
                 continue
 
+            if command == "unknown_command":
+                rprint(format_unknown_command(args[0]))
+                continue
+
             if not command:
                 continue
 
@@ -96,7 +101,7 @@ def main():
                 if result is not None:
                     rprint(result)
             else:
-                rprint("[red]Invalid command.[/red]")
+                rprint(format_unknown_command(command))
     finally:
         try:
             save_data(book)

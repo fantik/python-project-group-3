@@ -86,15 +86,17 @@ The project can be extended with additional functionality:
 
 1. Add **tags (keywords)** to notes
 2. Search and sort notes by tags
+3. Suggest the **closest command** when the user mistypes an unknown command
 
 ---
 
 ## 🏆 Bonus Evaluation Checklist
 
-| Requirement                   | Status |
-| ----------------------------- | ------ |
-| Add tags to notes             | ✅     |
-| Search and sort notes by tags | ✅     |
+| Requirement                                      | Status |
+| ------------------------------------------------ | ------ |
+| Add tags to notes                                | ✅     |
+| Search and sort notes by tags                    | ✅     |
+| Suggest closest command for unknown input        | ✅     |
 
 ---
 
@@ -223,6 +225,9 @@ uv run python -m unittest tests.test_validators
 # Run one feature test file
 uv run python -m unittest tests.test_birthdays_feature
 
+# Run command-guessing tests
+uv run python -m unittest tests.test_command_guessing_feature
+
 # Run a subset by filename pattern
 uv run python -m unittest discover -s tests -p "test_*feature.py"
 
@@ -310,6 +315,17 @@ Then create a Pull Request into `main`.
 | `hello`        | Greeting    |
 | `help`         | Show help   |
 | `exit`/`close` | Exit app    |
+
+When you mistype a command, the assistant suggests the closest match:
+
+| Input   | Suggestion |
+| ------- | ---------- |
+| `serch` | `search`   |
+| `hepl`  | `help`     |
+| `add-not Olga buy milk` | `add-note` |
+| `xyz`   | no match — shows `Type 'help' to see usage.` |
+
+The suggestion is shown only; enter the correct command manually to run it.
 
 ### Contacts
 
